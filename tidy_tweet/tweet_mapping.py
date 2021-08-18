@@ -48,7 +48,7 @@ def map_media(media_list_json) -> Dict[str, List[Dict]]:
 # TODO: Fields not included yet:
 # - public_metrics
 # - entities
-sql_by_table['media'] = {
+sql_by_table['user'] = {
     'create': """
 create table user (
     name text,
@@ -65,7 +65,7 @@ create table user (
 )
     """,
     'insert': """
-insert into user (
+insert or ignore into user (
     id, username, name, url,
     profile_image_url, description,
     created_at,
@@ -91,12 +91,12 @@ def map_user(user_json) -> Dict[str, List[Dict]]:
         'name': user_json['name'],
         'url': user_json['url'],
         'profile_image_url': user_json['profile_image_url'],
-        'description': user_json['description'],
+        'description': user_json['description'] if 'description' in user_json else None,
         'created_at': user_json['created_at'],
         'protected': user_json['protected'],
         'verified': user_json['verified'],
-        'location': user_json['location'],
-        'pinned_tweet_id': user_json['pinned_tweet_id']
+        'location': user_json['location'] if 'location' in user_json else None,
+        'pinned_tweet_id': user_json['pinned_tweet_id'] if 'pinned_tweet_id' in user_json else None
     }
     return {'user': [user_map]}
 
@@ -117,6 +117,7 @@ create table tweet (
     conversation_id text,
     created_at text,
     retweeted_tweet_id text,
+    quoted_tweet_id text,
     author_id text references user (id),
     id text primary key,
     text text,
@@ -140,7 +141,8 @@ insert or ignore into tweet (
     :possibly_sensitive, :reply_settings,
     :created_at,
     :conversation_id,
-    :retweeted_tweet_id
+    :retweeted_tweet_id,
+    :quoted_tweet_id
 )
     """
 }
@@ -158,15 +160,18 @@ def map_tweet(tweet_json) -> Dict[str, List[Dict]]:
         "created_at": tweet_json["created_at"],
         "conversation_id": tweet_json["conversation_id"]
     }
-    
+
     # TODO: handle all referenced tweets & entities, as objects/relationships as appropriate
     rt_id = None
+    qt_id = None
     if 'referenced_tweets' in tweet_json and len(tweet_json['referenced_tweets']) > 0:
         for t in tweet_json['referenced_tweets']:
             if t['type'] == 'retweeted':
                 rt_id = t['id']
-                break
+            elif t['type'] == 'quoted':
+                qt_id = t["id"]
     tweet_map["retweeted_tweet_id"] = rt_id
+    tweet_map["quoted_tweet_id"] = qt_id
 
     return {'tweet': [tweet_map]}
 
