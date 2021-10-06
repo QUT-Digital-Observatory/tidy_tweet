@@ -1,0 +1,10 @@
+# Folder for storing data
+data/*
+
+# Python environment bits & IDE artefacts
+.python-version
+.idea
+*__pycache__*
+.eggs
+*.egg-info
+dist/*
