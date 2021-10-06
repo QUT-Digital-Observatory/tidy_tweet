@@ -1,6 +1,7 @@
 import sqlite3
 import json
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union
+from os import PathLike
 import tidy_tweet.tweet_mapping as mapping
 from logging import basicConfig, getLogger
 
@@ -9,7 +10,7 @@ basicConfig()
 logger = getLogger(__name__)
 
 
-def initialise_sqlite(db_name: str):
+def initialise_sqlite(db_name: Union[str, PathLike]):
     with sqlite3.connect(db_name) as db:
         cursor = db.cursor()
         for tbl_stmt in mapping.create_table_statements:
@@ -32,7 +33,7 @@ def add_mappings(to_extend: Dict[Any, List], addition: Dict[Any, List]):
         to_extend[table].extend(addition[table])
 
 
-def load_twarc_json_to_sqlite(filename: str, db_name: str):
+def load_twarc_json_to_sqlite(filename: Union[str, PathLike], db_name: Union[str, PathLike]):
     with sqlite3.connect(db_name) as db, open(filename, 'r') as json_fh:
         for page in json_fh:
             page_json = json.loads(page)
@@ -40,7 +41,8 @@ def load_twarc_json_to_sqlite(filename: str, db_name: str):
             mappings = {t: [] for t in mapping.sql_by_table.keys()}
 
             # Includes
-            add_mappings(mappings, mapping.map_media(page_json['includes']['media']))
+            if 'media' in page_json['includes']:
+                add_mappings(mappings, mapping.map_media(page_json['includes']['media']))
 
             for user in page_json['includes']['users']:
                 add_mappings(mappings, mapping.map_user(user))
