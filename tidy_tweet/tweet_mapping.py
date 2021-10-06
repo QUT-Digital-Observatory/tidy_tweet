@@ -123,7 +123,8 @@ create table tweet (
     text text,
     lang text,
     source text,
-    possibly_sensitive integer -- boolean
+    possibly_sensitive integer, -- boolean
+    directly_collected integer -- boolean
 )
     """,
     'insert': """
@@ -134,7 +135,8 @@ insert or ignore into tweet (
     created_at,
     conversation_id,
     retweeted_tweet_id,
-    quoted_tweet_id
+    quoted_tweet_id,
+    directly_collected
 ) values (
     :id, :author_id,
     :text, :lang, :source,
@@ -142,13 +144,14 @@ insert or ignore into tweet (
     :created_at,
     :conversation_id,
     :retweeted_tweet_id,
-    :quoted_tweet_id
+    :quoted_tweet_id,
+    :directly_collected
 )
     """
 }
 
 
-def map_tweet(tweet_json) -> Dict[str, List[Dict]]:
+def map_tweet(tweet_json, directly_collected: bool) -> Dict[str, List[Dict]]:
     tweet_map = {
         "id": tweet_json["id"],
         "author_id": tweet_json["author_id"],
@@ -158,7 +161,8 @@ def map_tweet(tweet_json) -> Dict[str, List[Dict]]:
         "possibly_sensitive": tweet_json["possibly_sensitive"],
         "reply_settings": tweet_json["reply_settings"],
         "created_at": tweet_json["created_at"],
-        "conversation_id": tweet_json["conversation_id"]
+        "conversation_id": tweet_json["conversation_id"],
+        "directly_collected": directly_collected
     }
 
     # TODO: handle all referenced tweets & entities, as objects/relationships as appropriate
@@ -174,7 +178,6 @@ def map_tweet(tweet_json) -> Dict[str, List[Dict]]:
     tweet_map["quoted_tweet_id"] = qt_id
 
     return {'tweet': [tweet_map]}
-
 
 
 # --- Validation ---

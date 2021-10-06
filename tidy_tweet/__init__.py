@@ -45,9 +45,12 @@ def load_twarc_json_to_sqlite(filename: str, db_name: str):
             for user in page_json['includes']['users']:
                 add_mappings(mappings, mapping.map_user(user))
 
+            for tweet in page_json['includes']['tweets']:
+                add_mappings(mappings, mapping.map_tweet(tweet, False))
+
             # Data
             for tweet in page_json['data']:
-                add_mappings(mappings, mapping.map_tweet(tweet))
+                add_mappings(mappings, mapping.map_tweet(tweet, True))
 
             # TODO: doing this all in one big go isn't great
             for table, table_mappings in mappings.items():
