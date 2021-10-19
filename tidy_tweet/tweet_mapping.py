@@ -113,14 +113,15 @@ def map_user(user_json) -> Dict[str, List[Dict]]:
 sql_by_table["tweet"] = {
     'create': """
 create table tweet (
+    id text primary key,
     reply_settings text,
     conversation_id text,
     created_at text,
-    retweeted_tweet_id text,
-    quoted_tweet_id text,
-    replied_to_tweet_id text,
+    retweeted_tweet_id text references tweet (id),
+    quoted_tweet_id text references tweet (id),
+    replied_to_tweet_id text references tweet (id),
+    in_reply_to_user_id text references user (id),
     author_id text references user (id),
-    id text primary key,
     text text,
     lang text,
     source text,
@@ -137,7 +138,8 @@ insert or ignore into tweet (
     conversation_id,
     retweeted_tweet_id,
     quoted_tweet_id,
-    replied_to_tweet_id text,
+    replied_to_tweet_id,
+    in_reply_to_user_id,
     directly_collected
 ) values (
     :id, :author_id,
@@ -147,7 +149,8 @@ insert or ignore into tweet (
     :conversation_id,
     :retweeted_tweet_id,
     :quoted_tweet_id,
-    :replied_to_tweet_id text,
+    :replied_to_tweet_id,
+    :in_reply_to_user_id,
     :directly_collected
 )
     """
@@ -165,8 +168,12 @@ def map_tweet(tweet_json, directly_collected: bool) -> Dict[str, List[Dict]]:
         "reply_settings": tweet_json["reply_settings"],
         "created_at": tweet_json["created_at"],
         "conversation_id": tweet_json["conversation_id"],
+        "in_reply_to_user_id": None,
         "directly_collected": directly_collected
     }
+
+    if "in_reply_to_user_id" in tweet_json:
+        tweet_map["in_reply_to_user_id"] = tweet_json["in_reply_to_user_id"]
 
     # A tweet can have no more than one referenced tweet per type, but may have
     # multiple references of different types.
@@ -185,7 +192,7 @@ def map_tweet(tweet_json, directly_collected: bool) -> Dict[str, List[Dict]]:
                 replied_to_id = t["id"]
     tweet_map["retweeted_tweet_id"] = rt_id
     tweet_map["quoted_tweet_id"] = qt_id
-    tweet_map["replied_to_id"] = replied_to_id
+    tweet_map["replied_to_tweet_id"] = replied_to_id
 
     return {'tweet': [tweet_map]}
 
