@@ -118,6 +118,7 @@ create table tweet (
     created_at text,
     retweeted_tweet_id text,
     quoted_tweet_id text,
+    replied_to_tweet_id text,
     author_id text references user (id),
     id text primary key,
     text text,
@@ -136,6 +137,7 @@ insert or ignore into tweet (
     conversation_id,
     retweeted_tweet_id,
     quoted_tweet_id,
+    replied_to_tweet_id text,
     directly_collected
 ) values (
     :id, :author_id,
@@ -145,6 +147,7 @@ insert or ignore into tweet (
     :conversation_id,
     :retweeted_tweet_id,
     :quoted_tweet_id,
+    :replied_to_tweet_id text,
     :directly_collected
 )
     """
@@ -165,17 +168,24 @@ def map_tweet(tweet_json, directly_collected: bool) -> Dict[str, List[Dict]]:
         "directly_collected": directly_collected
     }
 
-    # TODO: handle all referenced tweets & entities, as objects/relationships as appropriate
+    # A tweet can have no more than one referenced tweet per type, but may have
+    # multiple references of different types.
+    # e.g. a tweet may have both a quoted tweet and a replied to tweet, but can't
+    # have two replied to tweets.
     rt_id = None
     qt_id = None
+    replied_to_id = None
     if 'referenced_tweets' in tweet_json and len(tweet_json['referenced_tweets']) > 0:
         for t in tweet_json['referenced_tweets']:
             if t['type'] == 'retweeted':
                 rt_id = t['id']
             elif t['type'] == 'quoted':
                 qt_id = t["id"]
+            elif t['type'] == 'replied_to':
+                replied_to_id = t["id"]
     tweet_map["retweeted_tweet_id"] = rt_id
     tweet_map["quoted_tweet_id"] = qt_id
+    tweet_map["replied_to_id"] = replied_to_id
 
     return {'tweet': [tweet_map]}
 
