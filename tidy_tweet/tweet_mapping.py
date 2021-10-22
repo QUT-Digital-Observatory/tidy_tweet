@@ -105,10 +105,8 @@ def map_user(user_json) -> Dict[str, List[Dict]]:
 
 # --- tweet tables ---
 # TODO: fields not yet included:
-# - referenced_tweets not properly implemented
 # - entities
 # - context_annotations
-# - public_metrics
 
 sql_by_table["tweet"] = {
     'create': """
@@ -126,6 +124,10 @@ create table tweet (
     lang text,
     source text,
     possibly_sensitive integer, -- boolean
+    like_count integer,
+    quote_count integer,
+    reply_count integer,
+    retweet_count integer,
     directly_collected integer -- boolean
 )
     """,
@@ -140,6 +142,7 @@ insert or ignore into tweet (
     quoted_tweet_id,
     replied_to_tweet_id,
     in_reply_to_user_id,
+    like_count, quote_count, reply_count, retweet_count,
     directly_collected
 ) values (
     :id, :author_id,
@@ -151,6 +154,7 @@ insert or ignore into tweet (
     :quoted_tweet_id,
     :replied_to_tweet_id,
     :in_reply_to_user_id,
+    :like_count, :quote_count, :reply_count, :retweet_count,
     :directly_collected
 )
     """
@@ -169,6 +173,10 @@ def map_tweet(tweet_json, directly_collected: bool) -> Dict[str, List[Dict]]:
         "created_at": tweet_json["created_at"],
         "conversation_id": tweet_json["conversation_id"],
         "in_reply_to_user_id": None,
+        "like_count": tweet_json["public_metrics"]["like_count"],
+        "quote_count": tweet_json["public_metrics"]["quote_count"],
+        "reply_count": tweet_json["public_metrics"]["reply_count"],
+        "retweet_count": tweet_json["public_metrics"]["retweet_count"],
         "directly_collected": directly_collected
     }
 
