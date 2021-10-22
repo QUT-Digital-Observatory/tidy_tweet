@@ -4,6 +4,7 @@ from typing import Dict, Any, List, Union
 from os import PathLike
 import tidy_tweet.tweet_mapping as mapping
 from logging import basicConfig, getLogger
+from tidy_tweet.utilities import add_mappings
 
 basicConfig()
 
@@ -24,21 +25,12 @@ def initialise_sqlite(db_name: Union[str, PathLike]):
         logger.info("The database schema has been initialised")
 
 
-def add_mappings(to_extend: Dict[Any, List], addition: Dict[Any, List]):
-    """
-    Appends all the mappings for each table from `addition` into `to_extend`.
-    Expects all keys in `addition` to already exist in `to_extend`.
-    """
-    for table in addition.keys():
-        to_extend[table].extend(addition[table])
-
-
 def load_twarc_json_to_sqlite(filename: Union[str, PathLike], db_name: Union[str, PathLike]):
     with sqlite3.connect(db_name) as db, open(filename, 'r') as json_fh:
         for page in json_fh:
             page_json = json.loads(page)
 
-            mappings = {t: [] for t in mapping.sql_by_table.keys()}
+            mappings = {}
 
             # Includes
             if 'media' in page_json['includes']:

@@ -1,7 +1,49 @@
 from typing import Dict, List
+from tidy_tweet.utilities import add_mappings
 
 
 sql_by_table: Dict[str, Dict[str, str]] = {}
+
+
+# --- Entities tables ---
+# User URLs
+sql_by_table["url"] = {
+    'create': """
+create table url (
+    source_id text, -- the id of the object (user or tweet) this URL is included in
+    source_type text, -- "user" or "tweet"
+    field text not null, -- e.g. "description", "text" - which field of the source object the URL is in
+    url text not null, -- t.co shortened URL
+    expanded_url text not null,
+    display_url text
+)
+    """,
+    'insert': """
+insert into url (
+    source_id, source_type, field,
+    url, expanded_url, display_url
+) values (
+    :source_id, :source_type, :field,
+    :url, :expanded_url, :display_url
+)
+    """
+}
+
+
+def map_urls(source_id: str, source_type: str, field: str, url_json_list: List[Dict]) -> Dict[str, List[Dict]]:
+    url_maps = []
+
+    for url_json in url_json_list:
+        url_maps.append({
+            'source_id': source_id,
+            'source_type': source_type,
+            'field': field,
+            'url': url_json['url'],
+            'expanded_url': url_json['expanded_url'],
+            'display_url': url_json['display_url']
+        })
+
+    return {"url": url_maps}
 
 
 # --- Includes tables ---
@@ -98,9 +140,25 @@ def map_user(user_json) -> Dict[str, List[Dict]]:
         'location': user_json['location'] if 'location' in user_json else None,
         'pinned_tweet_id': user_json['pinned_tweet_id'] if 'pinned_tweet_id' in user_json else None
     }
-    return {'user': [user_map]}
 
-# todo: tweets - any differences from top level tweet object?
+    mappings = {'user': [user_map]}
+
+    # Entities
+    if 'entities' in user_json:
+        if 'url' in user_json['entities']:
+            add_mappings(
+                mappings,
+                map_urls(user_json["id"], "user", "url", user_json["entities"]["url"]["urls"])
+            )
+        if 'description' in user_json['entities']:
+            if 'url' in user_json['entities']['description']:
+                add_mappings(
+                    mappings,
+                    map_urls(user_json["id"], "user", "description",
+                             user_json["entities"]["description"]["urls"])
+                )
+
+    return mappings
 
 
 # --- tweet tables ---
@@ -202,7 +260,14 @@ def map_tweet(tweet_json, directly_collected: bool) -> Dict[str, List[Dict]]:
     tweet_map["quoted_tweet_id"] = qt_id
     tweet_map["replied_to_tweet_id"] = replied_to_id
 
-    return {'tweet': [tweet_map]}
+    mappings = {'tweet': [tweet_map]}
+
+    # Entities
+    if 'entities' in tweet_json:
+        if 'urls' in tweet_json['entities']:
+            add_mappings(mappings, map_urls(tweet_json['id'], 'tweet', 'text', tweet_json['entities']['urls']))
+
+    return mappings
 
 
 # --- Validation ---
