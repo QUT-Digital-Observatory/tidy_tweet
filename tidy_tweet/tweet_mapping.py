@@ -6,7 +6,7 @@ sql_by_table: Dict[str, Dict[str, str]] = {}
 
 
 # --- Entities tables ---
-# User URLs
+# URLs
 sql_by_table["url"] = {
     'create': """
 create table url (
@@ -44,6 +44,100 @@ def map_urls(source_id: str, source_type: str, field: str, url_json_list: List[D
         })
 
     return {"url": url_maps}
+
+
+# Hashtags
+sql_by_table["hashtag"] = {
+    'create': """
+create table hashtag (
+    source_id text, -- the id of the object (user or tweet) this hashtag is included in
+    source_type text, -- "user" or "tweet"
+    field text not null, -- e.g. "description", "text" - which field of the source object the hashtag is in
+    tag text not null
+)
+    """,
+    'insert': """
+insert into hashtag (
+    source_id, source_type, field,
+    tag
+) values (
+    :source_id, :source_type, :field,
+    :tag
+)
+    """
+}
+
+
+def map_hashtags(source_id: str, source_type: str, field: str, tag_json_list: List[Dict]) -> Dict[str, List[Dict]]:
+    tag_mappings = [
+        {
+            "source_id": source_id,
+            "source_type": source_type,
+            "field": field,
+            "tag": t["tag"]
+        }
+        for t in tag_json_list
+    ]
+    return {"hashtag": tag_mappings}
+
+
+# Mentions
+sql_by_table["mention"] = {
+    'create': """
+create table mention (
+    source_id text, -- the id of the object (user or tweet) this mention is included in
+    source_type text, -- "user" or "tweet"
+    field text not null, -- e.g. "description", "text" - which field of the source object the mention is in
+    username text not null -- username of mentioned user
+)
+    """,
+    'insert': """
+insert into mention (
+    source_id, source_type, field,
+    username
+) values (
+    :source_id, :source_type, :field,
+    :username
+)
+    """
+}
+
+
+def map_mentions(source_id: str, source_type: str, field: str, mention_json_list: List[Dict]) -> Dict[str, List[Dict]]:
+    mention_mappings = [
+        {
+            "source_id": source_id,
+            "source_type": source_type,
+            "field": field,
+            "username": t["username"]
+        }
+        for t in mention_json_list
+    ]
+    return {"mention": mention_mappings}
+
+
+# Entities objects
+def map_entities(source_id, source_type, field, entities_json) -> Dict[str, List[Dict]]:
+    mappings = {}
+
+    for entity_type, entity_data in entities_json.items():
+        if entity_type == 'urls':
+            add_mappings(
+                mappings,
+                map_urls(source_id, source_type, field, entity_data)
+            )
+        if entity_type == 'hashtags':
+            add_mappings(
+                mappings,
+                map_hashtags(source_id, source_type, field, entity_data)
+            )
+        if entity_type == 'mentions':
+            add_mappings(
+                mappings,
+                map_mentions(source_id, source_type, field, entity_data)
+            )
+
+    return mappings
 
 
 # --- Includes tables ---
@@ -89,7 +183,6 @@ def map_media(media_list_json) -> Dict[str, List[Dict]]:
 # users
 # TODO: Fields not included yet:
 # - public_metrics
-# - entities
 sql_by_table['user'] = {
     'create': """
 create table user (
@@ -145,18 +238,11 @@ def map_user(user_json) -> Dict[str, List[Dict]]:
 
     # Entities
     if 'entities' in user_json:
-        if 'url' in user_json['entities']:
+        for field, entities in user_json["entities"].items():
             add_mappings(
                 mappings,
-                map_urls(user_json["id"], "user", "url", user_json["entities"]["url"]["urls"])
+                map_entities(user_json["id"], "user", field, entities)
             )
-        if 'description' in user_json['entities']:
-            if 'url' in user_json['entities']['description']:
-                add_mappings(
-                    mappings,
-                    map_urls(user_json["id"], "user", "description",
-                             user_json["entities"]["description"]["urls"])
-                )
 
     return mappings
 
@@ -264,8 +350,10 @@ def map_tweet(tweet_json, directly_collected: bool) -> Dict[str, List[Dict]]:
 
     # Entities
     if 'entities' in tweet_json:
-        if 'urls' in tweet_json['entities']:
-            add_mappings(mappings, map_urls(tweet_json['id'], 'tweet', 'text', tweet_json['entities']['urls']))
+        add_mappings(
+            mappings,
+            map_entities(tweet_json["id"], "tweet", "text", tweet_json["entities"])
+        )
 
     return mappings
 
