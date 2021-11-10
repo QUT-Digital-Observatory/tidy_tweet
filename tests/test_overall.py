@@ -24,15 +24,16 @@ def test_load_timeline(tmp_path):
         db = conn.cursor()
 
         # Check number of tweets
-        db.execute("""
+        db.execute(
+            """
             select directly_collected, count(*) 
             from tweet 
             group by directly_collected;
-         """)
+         """
+        )
 
         for directly_collected, num_tweets in db:
             if directly_collected == 0:
                 assert num_tweets == 177
             else:
                 assert num_tweets == 204
-

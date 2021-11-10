@@ -25,25 +25,29 @@ def initialise_sqlite(db_name: Union[str, PathLike]):
         logger.info("The database schema has been initialised")
 
 
-def load_twarc_json_to_sqlite(filename: Union[str, PathLike], db_name: Union[str, PathLike]):
-    with sqlite3.connect(db_name) as db, open(filename, 'r') as json_fh:
+def load_twarc_json_to_sqlite(
+    filename: Union[str, PathLike], db_name: Union[str, PathLike]
+):
+    with sqlite3.connect(db_name) as db, open(filename, "r") as json_fh:
         for page in json_fh:
             page_json = json.loads(page)
 
             mappings = {}
 
             # Includes
-            if 'media' in page_json['includes']:
-                add_mappings(mappings, mapping.map_media(page_json['includes']['media']))
+            if "media" in page_json["includes"]:
+                add_mappings(
+                    mappings, mapping.map_media(page_json["includes"]["media"])
+                )
 
-            for user in page_json['includes']['users']:
+            for user in page_json["includes"]["users"]:
                 add_mappings(mappings, mapping.map_user(user))
 
-            for tweet in page_json['includes']['tweets']:
+            for tweet in page_json["includes"]["tweets"]:
                 add_mappings(mappings, mapping.map_tweet(tweet, False))
 
             # Data
-            for tweet in page_json['data']:
+            for tweet in page_json["data"]:
                 add_mappings(mappings, mapping.map_tweet(tweet, True))
 
             # TODO: doing this all in one big go isn't great
@@ -51,6 +55,8 @@ def load_twarc_json_to_sqlite(filename: Union[str, PathLike], db_name: Union[str
                 if len(table_mappings) == 0:
                     continue
                 elif not isinstance(table_mappings, list):
-                    db.execute(mapping.sql_by_table[table]['insert'], table_mappings)
+                    db.execute(mapping.sql_by_table[table]["insert"], table_mappings)
                 else:
-                    db.executemany(mapping.sql_by_table[table]['insert'], table_mappings)
+                    db.executemany(
+                        mapping.sql_by_table[table]["insert"], table_mappings
+                    )
