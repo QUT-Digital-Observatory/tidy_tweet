@@ -1,6 +1,9 @@
 # Folder for storing data
 data/*
 
+# Version file needs to stay out of git
+src/tidy_tweet/_version.py
+
 # Python environment bits & IDE artefacts
 .python-version
 .idea
