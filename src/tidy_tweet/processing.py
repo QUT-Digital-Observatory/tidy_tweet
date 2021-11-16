@@ -1,6 +1,6 @@
 import sqlite3
 import json
-from typing import Union, List, Iterable, Mapping
+from typing import Union, Mapping
 from os import PathLike
 from pathlib import Path
 import tidy_tweet.tweet_mapping as mapping
@@ -21,10 +21,11 @@ def initialise_sqlite(
 
     :param db_name: File path to create a new database at. This is expected to not
     already exist.
-    :param allow_existing_database: Only set this to True if you want to add the tidy_tweet
-    tables to an existing database, such as one where you have other data pre-existing. This
-    function expects the tidy_tweet tables to not already exist in the database. This
-    behaviour, while possible, is not currently supported by tidy_tweet.
+    :param allow_existing_database: Only set this to True if you want to add the
+    tidy_tweet tables to an existing database, such as one where you have other data
+    pre-existing. This function expects the tidy_tweet tables to not already exist in
+    the database. This behaviour, while possible, is not currently supported by
+    tidy_tweet.
     """
     db_name = Path(db_name)
 

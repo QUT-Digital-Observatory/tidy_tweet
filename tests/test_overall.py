@@ -26,8 +26,8 @@ def test_load_timeline(tmp_path):
         # Check number of tweets
         db.execute(
             """
-            select directly_collected, count(*) 
-            from tweet 
+            select directly_collected, count(*)
+            from tweet
             group by directly_collected;
          """
         )

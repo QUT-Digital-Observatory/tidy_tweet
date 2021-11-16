@@ -12,7 +12,8 @@ sql_by_table["url"] = {
 create table url (
     source_id text, -- the id of the object (user or tweet) this URL is included in
     source_type text, -- "user" or "tweet"
-    field text not null, -- e.g. "description", "text" - which field of the source object the URL is in
+    field text not null, -- e.g. "description", "text" - which field of the source
+                         -- object the URL is in
     url text not null, -- t.co shortened URL
     expanded_url text not null,
     display_url text
@@ -56,7 +57,8 @@ sql_by_table["hashtag"] = {
 create table hashtag (
     source_id text, -- the id of the object (user or tweet) this hashtag is included in
     source_type text, -- "user" or "tweet"
-    field text not null, -- e.g. "description", "text" - which field of the source object the hashtag is in
+    field text not null, -- e.g. "description", "text" - which field of the source
+                         -- object the hashtag is in
     tag text not null
 )
     """,
@@ -93,7 +95,8 @@ sql_by_table["mention"] = {
 create table mention (
     source_id text, -- the id of the object (user or tweet) this mention is included in
     source_type text, -- "user" or "tweet"
-    field text not null, -- e.g. "description", "text" - which field of the source object the mention is in
+    field text not null, -- e.g. "description", "text" - which field of the source
+                         -- object the mention is in
     username text not null -- username of mentioned user
 )
     """,
