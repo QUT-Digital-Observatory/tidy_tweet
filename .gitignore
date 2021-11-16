@@ -4,6 +4,9 @@ data/*
 # Version file needs to stay out of git
 src/tidy_tweet/_version.py
 
+# Logs (eg twarc logs)
+*.log
+
 # Python environment bits & IDE artefacts
 .python-version
 .idea
@@ -11,3 +14,5 @@ src/tidy_tweet/_version.py
 .eggs
 *.egg-info
 dist/*
+.nox/*
+*.pytest_cache/*
