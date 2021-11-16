@@ -14,7 +14,7 @@ def initialise_sqlite(
     db_name: Union[str, PathLike], allow_existing_database: bool = False
 ):
     """
-    Creates and initifromalises an empty sqlite database for loading tweet data into.
+    Creates and initialises an empty sqlite database for loading tweet data into.
 
     The database schema can be seen in the resulting sqlite .db file, or as a list
     of create table statements in `tidy_tweet.database_schema`
@@ -43,7 +43,8 @@ def initialise_sqlite(
             created_tables = cursor.fetchall()
             logger.debug("Created database tables: " + str(created_tables))
             assert len(created_tables) == len(mapping.create_table_statements)
-            logger.info("The database schema has been initialised")
+
+        logger.info("The database schema has been initialised")
 
 
 def _load_page_object(page_json: Mapping, connection: sqlite3.Connection):
@@ -62,6 +63,7 @@ def _load_page_object(page_json: Mapping, connection: sqlite3.Connection):
     mappings = {}
 
     # Includes
+    logger.debug("Processing includes section of page")
     if "media" in page_json["includes"]:
         add_mappings(mappings, mapping.map_media(page_json["includes"]["media"]))
 
@@ -72,10 +74,11 @@ def _load_page_object(page_json: Mapping, connection: sqlite3.Connection):
         add_mappings(mappings, mapping.map_tweet(tweet, False))
 
     # Data
+    logger.debug("Processing data section of page")
     for tweet in page_json["data"]:
         add_mappings(mappings, mapping.map_tweet(tweet, True))
 
-    # TODO: doing this all in one big go isn't great
+    logger.debug(f"About to write to {len(mappings)} tables")
     for table, table_mappings in mappings.items():
         if len(table_mappings) == 0:
             continue
@@ -83,6 +86,8 @@ def _load_page_object(page_json: Mapping, connection: sqlite3.Connection):
             db.execute(mapping.sql_by_table[table]["insert"], table_mappings)
         else:
             db.executemany(mapping.sql_by_table[table]["insert"], table_mappings)
+
+    logger.debug(f"Finished writing page to database.")
 
 
 def load_twarc_json_to_sqlite(
@@ -100,6 +105,13 @@ def load_twarc_json_to_sqlite(
     :param db_name: The path to an existing sqlite database to load the data into
     """
     with open(filename, "r") as json_fh, sqlite3.connect(db_name) as connection:
+        logger.info(f"Loading {filename} into {db_name}")
+
+        page_num = 0
         for page in json_fh:
+            page_num = page_num + 1
+            logger.info(f"Processing page {page_num} of {filename}")
             page_json = json.loads(page)
             _load_page_object(page_json, connection)
+
+        logger.info(f"All {page_num} pages of {filename} processed")
