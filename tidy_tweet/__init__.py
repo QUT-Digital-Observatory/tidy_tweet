@@ -7,4 +7,3 @@ basicConfig()
 
 
 logger = getLogger(__name__)
-

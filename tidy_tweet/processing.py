@@ -10,7 +10,9 @@ from tidy_tweet.utilities import add_mappings
 logger = getLogger(__name__)
 
 
-def initialise_sqlite(db_name: Union[str, PathLike], allow_existing_database: bool=False):
+def initialise_sqlite(
+    db_name: Union[str, PathLike], allow_existing_database: bool = False
+):
     """
     Creates and initifromalises an empty sqlite database for loading tweet data into.
 
@@ -60,9 +62,7 @@ def _load_page_object(page_json: Mapping, connection: sqlite3.Connection):
 
     # Includes
     if "media" in page_json["includes"]:
-        add_mappings(
-            mappings, mapping.map_media(page_json["includes"]["media"])
-        )
+        add_mappings(mappings, mapping.map_media(page_json["includes"]["media"]))
 
     for user in page_json["includes"]["users"]:
         add_mappings(mappings, mapping.map_user(user))
@@ -81,9 +81,7 @@ def _load_page_object(page_json: Mapping, connection: sqlite3.Connection):
         elif not isinstance(table_mappings, list):
             db.execute(mapping.sql_by_table[table]["insert"], table_mappings)
         else:
-            db.executemany(
-                mapping.sql_by_table[table]["insert"], table_mappings
-            )
+            db.executemany(mapping.sql_by_table[table]["insert"], table_mappings)
 
 
 def load_twarc_json_to_sqlite(
