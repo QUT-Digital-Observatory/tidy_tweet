@@ -12,6 +12,16 @@ and we can't guarantee no breaking changes either of library interface or databa
 notably, the database schema will have a significant change to allow multiple JSON files to be loaded into the same
 database file.
 
+## Installation
+
+tidy_tweet is a Python package and can be installed with pip.
+
+Short version of installation instructions:
+
+```bash
+pip install tidy-tweet
+```
+
 ## Usage
 
 A command-line interface (CLI) is planned for the future, but is not yet implemented.
