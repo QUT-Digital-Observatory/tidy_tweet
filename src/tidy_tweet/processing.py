@@ -87,7 +87,7 @@ def _load_page_object(page_json: Mapping, connection: sqlite3.Connection):
         else:
             db.executemany(mapping.sql_by_table[table]["insert"], table_mappings)
 
-    logger.debug(f"Finished writing page to database.")
+    logger.debug("Finished writing page to database.")
 
 
 def load_twarc_json_to_sqlite(
