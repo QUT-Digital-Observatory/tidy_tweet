@@ -339,7 +339,7 @@ def map_tweet(tweet_json, directly_collected: bool) -> Dict[str, List[Dict]]:
     # A tweet can have no more than one referenced tweet per type, but may have
     # multiple references of different types.
     # e.g. a tweet may have both a quoted tweet and a replied to tweet, but can't
-    # have two replied to tweets.
+    # have two replied_to tweets.
     rt_id = None
     qt_id = None
     replied_to_id = None
@@ -377,8 +377,8 @@ for table_sql in sql_by_table.values():
 # --- Convenience lists ---
 def clean_sql_statement(original: str) -> str:
     """
-    Cleans up SQL statements so they end with a semicolon and don't have any leading or
-    trailing whitespace
+    Cleans up SQL statements so that they end with a semicolon and don't have any
+    leading or trailing whitespace
     """
     clean = original.strip()
     if not clean.endswith(";"):
