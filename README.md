@@ -18,6 +18,7 @@ database file.
 - [Input and Output](#input-and-output)
 - [Installation](#installation)
 - [Usage](#usage)
+- [Feedback and Contributions](#feedback-and-contributions)
 - [About tidy_tweet](#about-tidy_tweet)
 
 ## Collecting Twitter data
@@ -76,6 +77,14 @@ with sqlite3.connect('ObservatoryTeam.db') as connection:
 
     print(f"There are {db.fetchone()[0]} tweets in the database!")
 ```
+
+## Feedback and contributions
+
+We appreciate all feedback and contributions!
+
+Found an issue with tidy_tweet? [Find out how to let us know](contributing.md#filing-an-issue)
+
+Interested in contributing? Find out more in our [contributing.md](contributing.md)
 
 ## About tidy_tweet
 
