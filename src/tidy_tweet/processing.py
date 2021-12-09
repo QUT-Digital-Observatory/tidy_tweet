@@ -62,6 +62,12 @@ def _load_page_object(page_json: Mapping, connection: sqlite3.Connection):
 
     mappings = {}
 
+    # Metadata
+    logger.debug("Processing metadata section of page")
+    add_mappings(mappings, mapping.map_tidy_tweet_metadata())
+    if "__twarc" in page_json:
+        add_mappings(mappings, mapping.map_twarc_metadata(page_json["__twarc"]))
+
     # Includes
     logger.debug("Processing includes section of page")
     if "media" in page_json["includes"]:

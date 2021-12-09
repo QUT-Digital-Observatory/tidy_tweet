@@ -1,5 +1,14 @@
 from typing import Dict, List
 from tidy_tweet.utilities import add_mappings
+from logging import getLogger
+
+
+logger = getLogger(__name__)
+
+
+# --- SCHEMA VERSION ---
+# Update this every time the database schema is changed!
+SCHEMA_VERSION = "2021-12-09"
 
 
 sql_by_table: Dict[str, Dict[str, str]] = {}
@@ -365,6 +374,48 @@ def map_tweet(tweet_json, directly_collected: bool) -> Dict[str, List[Dict]]:
         )
 
     return mappings
+
+
+# --- Metadata ---
+
+sql_by_table["_metadata"] = {
+    "create": """
+create table _metadata (
+    metadata_key text, --primary key on conflict fail,
+    metadata_value text
+)
+    """,
+    "insert": """
+insert into _metadata (metadata_key, metadata_value)
+    values (:metadata_key, :metadata_value)
+    """,
+}
+
+
+def map_twarc_metadata(twarc_metadata_json) -> Dict[str, List[Dict]]:
+    # Rename the "version" key for clarity
+    twarc_metadata_json["twarc_version"] = twarc_metadata_json.pop("version")
+    return {
+        "_metadata": [
+            {"metadata_key": k, "metadata_value": v}
+            for k, v in twarc_metadata_json.items()
+        ]
+    }
+
+
+def map_tidy_tweet_metadata() -> Dict[str, List[Dict]]:
+    try:
+        from tidy_tweet._version import version
+    except ImportError:
+        version = "unspecified"
+        logger.warn("WARNING: cannot store tidy_tweet version in database as version could not be fetched. If running tidy_tweet from source, try installing package in editable mode.")
+
+    return {
+        "_metadata": [
+            {"metadata_key": "schema_version", "metadata_value": SCHEMA_VERSION},
+            {"metadata_key": "tidy_tweet_version", "metadata_value": version},
+        ]
+    }
 
 
 # --- Validation ---
