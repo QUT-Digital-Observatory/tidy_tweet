@@ -410,6 +410,7 @@ def map_tidy_tweet_metadata() -> Dict[str, List[Dict]]:
         version = "unspecified"
         logger.warn("WARNING: cannot store tidy_tweet version in database as version could not be fetched. If running tidy_tweet from source, try installing package in editable mode.")
 
+    # TODO: how to handle database with multiple additions of files with different library versions?
     return {
         "_metadata": [
             {"metadata_key": "schema_version", "metadata_value": SCHEMA_VERSION},
