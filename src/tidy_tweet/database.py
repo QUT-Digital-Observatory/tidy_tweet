@@ -98,19 +98,22 @@ def check_database_version(db_name):
     """
     logger.debug(f"Checking version compatibility of {db_name}...")
     conn = sqlite3.connect(db_name)
-    with conn.cursor() as db:
+    with conn:
+        db = conn.cursor()
         db.execute(
             """
             select metadata_value from _metadata 
             where metadata_key='schema_version'
             """)
-        db_schema_version = db.fetchone()[0]
+        result = db.fetchone() or []
+        db_schema_version = None if len(result) == 0 else result[0]
         db.execute(
             """
             select metadata_value from _metadata 
             where metadata_key='tidy_tweet_version'
             """)
-        db_library_version = db.fetchone()
+        result = db.fetchone() or []
+        db_library_version = None if len(result) == 0 else result[0]
     if db_schema_version != mapping.SCHEMA_VERSION:
         raise SchemaVersionMismatchError(mapping.SCHEMA_VERSION, db_schema_version, db_name)
     if db_library_version != library_version:
