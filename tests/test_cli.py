@@ -1,6 +1,5 @@
 from click.testing import CliRunner
 from tidy_tweet.__main__ import tidy_twarc_jsons
-from test_overall import timeline_json_file
 
 
 def test_no_args():
@@ -26,6 +25,3 @@ def test_one_arg(tmp_path):
     assert result.exit_code != 0
 
     # Just a json file - should fail
-
-
-

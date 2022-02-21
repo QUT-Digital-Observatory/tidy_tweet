@@ -19,11 +19,13 @@ class SchemaVersionMismatchError(Exception):
         super().__init__(*args)
 
     def message(self):
-        msg = f"Database file {self.db_name} is using tidy_tweet database schema " \
-              f"version {self.db_schema_version} but the version of tidy_tweet you " \
-              f"are running is using tidy_tweet database schema version " \
-              f"{self.db_schema_version}. These versions are not compatible. It is " \
-              f"recommended to reprocess all your json files into a fresh database."
+        msg = (
+            f"Database file {self.db_name} is using tidy_tweet database schema "
+            f"version {self.db_schema_version} but the version of tidy_tweet you "
+            f"are running is using tidy_tweet database schema version "
+            f"{self.db_schema_version}. These versions are not compatible. It is "
+            f"recommended to reprocess all your json files into a fresh database."
+        )
         return msg
 
     def __str__(self):
@@ -38,12 +40,14 @@ class LibraryVersionMismatchWarning(Warning):
         super().__init__(*args)
 
     def message(self):
-        msg = f"Database file {self.db_name} contains data processed with tidy_tweet " \
-              f"version {self.db_library_version}, but the version of tidy_tweet you " \
-              f"are currently using is version {self.library_version}. This is not " \
-              f"necessarily incompatible, but if you notice any inconsistencies with " \
-              f"how the data is parsed, you may wish to reprocess all your json files "\
-              f"into a fresh and consistent database."
+        msg = (
+            f"Database file {self.db_name} contains data processed with tidy_tweet "
+            f"version {self.db_library_version}, but the version of tidy_tweet you "
+            f"are currently using is version {self.library_version}. This is not "
+            f"necessarily incompatible, but if you notice any inconsistencies with "
+            f"how the data is parsed, you may wish to reprocess all your json files "
+            f"into a fresh and consistent database."
+        )
         return msg
 
     def __str__(self):
@@ -102,22 +106,28 @@ def check_database_version(db_name):
         db = conn.cursor()
         db.execute(
             """
-            select metadata_value from _metadata 
+            select metadata_value from _metadata
             where metadata_key='schema_version'
-            """)
+            """
+        )
         result = db.fetchone() or []
         db_schema_version = None if len(result) == 0 else result[0]
         db.execute(
             """
-            select metadata_value from _metadata 
+            select metadata_value from _metadata
             where metadata_key='tidy_tweet_version'
-            """)
+            """
+        )
         result = db.fetchone() or []
         db_library_version = None if len(result) == 0 else result[0]
     if db_schema_version != mapping.SCHEMA_VERSION:
-        raise SchemaVersionMismatchError(mapping.SCHEMA_VERSION, db_schema_version, db_name)
+        raise SchemaVersionMismatchError(
+            mapping.SCHEMA_VERSION, db_schema_version, db_name
+        )
     if db_library_version != library_version:
-        warning = LibraryVersionMismatchWarning(library_version, db_library_version, db_name)
+        warning = LibraryVersionMismatchWarning(
+            library_version, db_library_version, db_name
+        )
         logger.warning(warning.message())
         warn(warning)
     else:

@@ -16,20 +16,9 @@ logger = getLogger(__name__)
 
 
 @click.command()
-@click.argument(
-    "database",
-    type=click.Path(path_type=Path),
-    required=True
-)
-@click.argument(
-    "json_files",
-    type=click.Path(exists=True),
-    nargs=-1
-)
-def tidy_twarc_jsons(
-        database: Path,
-        json_files: Collection[Union[str, PathLike]]
-):
+@click.argument("database", type=click.Path(path_type=Path), required=True)
+@click.argument("json_files", type=click.Path(exists=True), nargs=-1)
+def tidy_twarc_jsons(database: Path, json_files: Collection[Union[str, PathLike]]):
     """
     Tidies Twitter json collected with Twarc into relational tables.
 
@@ -57,8 +46,8 @@ def tidy_twarc_jsons(
             raise click.UsageError(e.message()) from e
         except sqlite3.DatabaseError as e:
             raise click.BadParameter(
-                f"{database} is not a database file.",
-                param_hint='database') from e
+                f"{database} is not a database file.", param_hint="database"
+            ) from e
         except Exception as e:
             raise e
 
@@ -79,8 +68,11 @@ def tidy_twarc_jsons(
         total_pages = total_pages + p
         click.echo(f"{p} pages of Twitter results loaded from {file}")
 
-    click.echo(f"All done! {total_pages} pages of tweets loaded into {database} from {n} files.")
+    click.echo(
+        f"All done! {total_pages} pages of tweets loaded into {database} from {n} "
+        f"files."
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     tidy_twarc_jsons()
