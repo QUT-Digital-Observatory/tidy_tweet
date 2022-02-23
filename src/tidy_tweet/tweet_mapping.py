@@ -186,10 +186,10 @@ def map_media(media_list_json) -> Dict[str, List[Dict]]:
         mapped_media.append(
             {
                 "media_key": media_json["media_key"],
-                "url": media_json["url"],
-                "type": media_json["type"],
-                "height": media_json["height"],
-                "width": media_json["width"],
+                "url": media_json["url"] if "url" in media_json else None,
+                "type": media_json["type"] if "type" in media_json else None,
+                "height": media_json["height"] if "height" in media_json else None,
+                "width": media_json["width"] if "width" in media_json else None,
             }
         )
     return {"media": mapped_media}
