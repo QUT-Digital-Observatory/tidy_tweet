@@ -8,7 +8,7 @@ logger = getLogger(__name__)
 
 # --- SCHEMA VERSION ---
 # Update this every time the database schema is changed!
-SCHEMA_VERSION = "2021-12-09"
+SCHEMA_VERSION = "2022-02-23"
 
 
 sql_by_table: Dict[str, Dict[str, str]] = {}
@@ -24,7 +24,7 @@ create table url (
     field text not null, -- e.g. "description", "text" - which field of the source
                          -- object the URL is in
     url text not null, -- t.co shortened URL
-    expanded_url text not null,
+    expanded_url text,
     display_url text
 )
     """,
@@ -52,8 +52,11 @@ def map_urls(
                 "source_type": source_type,
                 "field": field,
                 "url": url_json["url"],
-                "expanded_url": url_json["expanded_url"],
-                "display_url": url_json["display_url"],
+                # These fields are not guaranteed to be present - if a user
+                # copies and pastes a shortened url into a profile, it won't
+                # be expanded - eg https://twitter.com/SAHU_Finance
+                "expanded_url": url_json.get("expanded_url"),
+                "display_url": url_json.get("display_url"),
             }
         )
 
