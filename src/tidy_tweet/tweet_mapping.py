@@ -334,7 +334,7 @@ def map_tweet(tweet_json, directly_collected: bool) -> Dict[str, List[Dict]]:
         "author_id": tweet_json["author_id"],
         "text": tweet_json["text"],
         "lang": tweet_json["lang"],
-        "source": tweet_json["source"],
+        "source": tweet_json.get("source", None),
         "possibly_sensitive": tweet_json["possibly_sensitive"],
         "reply_settings": tweet_json["reply_settings"],
         "created_at": tweet_json["created_at"],
