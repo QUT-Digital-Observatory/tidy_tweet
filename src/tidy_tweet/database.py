@@ -81,6 +81,13 @@ def initialise_sqlite(
         for tbl_stmt in mapping.create_table_statements:
             cursor.execute(tbl_stmt)
 
+        # Initialise the schema related metadata first, otherwise if an
+        # insert fails we end up with a schema version of null.
+        cursor.executemany(
+            mapping.sql_by_table["_metadata"]["insert"],
+            mapping.map_tidy_tweet_metadata()["_metadata"],
+        )
+
         if not allow_existing_database:
             # ".tables" only works in the sqlite shell!
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
