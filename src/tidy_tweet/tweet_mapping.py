@@ -162,19 +162,25 @@ sql_by_table["media"] = {
     "create": """
 create table media (
     url text,
+    preview_image_url text,
     height integer,
     width integer,
     type text,
+    duration_ms integer,
+    view_count integer,
+    alt_text string,
     media_key text primary key
 )
     """,
     "insert": """
 insert or ignore into media (
     media_key, url, type,
-    height, width
+    height, width, preview_image_url, alt_text,
+    duration_ms, view_count
 ) values (
     :media_key, :url, :type,
-    :height, :width
+    :height, :width, :preview_image_url, :alt_text,
+    :duration_ms, :view_count
 )
     """,
 }
@@ -183,6 +189,11 @@ insert or ignore into media (
 def map_media(media_list_json) -> Dict[str, List[Dict]]:
     mapped_media = []
     for media_json in media_list_json:
+        try:
+            view_count = media_json["public_metrics"]["view_count"]
+        except KeyError:
+            view_count = None
+
         mapped_media.append(
             {
                 "media_key": media_json["media_key"],
@@ -190,6 +201,16 @@ def map_media(media_list_json) -> Dict[str, List[Dict]]:
                 "type": media_json["type"] if "type" in media_json else None,
                 "height": media_json["height"] if "height" in media_json else None,
                 "width": media_json["width"] if "width" in media_json else None,
+                "preview_image_url": media_json["preview_image_url"]
+                if "preview_image_url" in media_json
+                else None,
+                "alt_text": media_json["alt_text"]
+                if "alt_text" in media_json
+                else None,
+                "duration_ms": media_json["duration_ms"]
+                if "duration_ms" in media_json
+                else None,
+                "view_count": view_count,
             }
         )
     return {"media": mapped_media}
