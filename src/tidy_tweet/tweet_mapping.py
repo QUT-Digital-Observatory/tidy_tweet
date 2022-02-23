@@ -186,7 +186,9 @@ def map_media(media_list_json) -> Dict[str, List[Dict]]:
         mapped_media.append(
             {
                 "media_key": media_json["media_key"],
-                "url": media_json["url"],
+                # For videos, there is no url present in the data, just a
+                # media key and a preview url :/
+                "url": media_json.get("url", None) or media_json["preview_image_url"],
                 "type": media_json["type"],
                 "height": media_json["height"],
                 "width": media_json["width"],
