@@ -14,5 +14,6 @@ src/tidy_tweet/_version.py
 .eggs
 *.egg-info
 dist/*
+build/*
 .nox/*
 *.pytest_cache/*
