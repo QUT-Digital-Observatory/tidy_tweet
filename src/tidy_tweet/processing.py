@@ -43,7 +43,19 @@ def _load_page_object(page_json: Mapping, connection: sqlite3.Connection):
 
     # Data
     logger.debug("Processing data section of page")
-    for tweet in page_json["data"]:
+    #  - Some endpoints will return responses without data (for example if all
+    #    of the tweets in a hydration call are no longer available)
+    #  - For most endpoints this will be a list of tweets if present,
+    #    otherwise for the sample and filter endpoints this will be a
+    #    single tweet object in the data key.
+    tweet_or_tweets = page_json.get("data", [])
+
+    if isinstance(tweet_or_tweets, list):
+        tweets = tweet_or_tweets
+    elif isinstance(tweet_or_tweets, dict):
+        tweets = [tweet_or_tweets]
+
+    for tweet in tweets:
         add_mappings(mappings, mapping.map_tweet(tweet, True))
 
     logger.debug(f"About to write to {len(mappings)} tables")
