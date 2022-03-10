@@ -8,7 +8,7 @@ logger = getLogger(__name__)
 
 # --- SCHEMA VERSION ---
 # Update this every time the database schema is changed!
-SCHEMA_VERSION = "2022-02-23"
+SCHEMA_VERSION = "2022-03-10"
 
 
 sql_by_table: Dict[str, Dict[str, str]] = {}
@@ -165,19 +165,25 @@ sql_by_table["media"] = {
     "create": """
 create table media (
     url text,
+    preview_image_url text,
     height integer,
     width integer,
     type text,
+    duration_ms integer,
+    view_count integer,
+    alt_text string,
     media_key text primary key
 )
     """,
     "insert": """
 insert or ignore into media (
     media_key, url, type,
-    height, width
+    height, width, preview_image_url, alt_text,
+    duration_ms, view_count
 ) values (
     :media_key, :url, :type,
-    :height, :width
+    :height, :width, :preview_image_url, :alt_text,
+    :duration_ms, :view_count
 )
     """,
 }
@@ -186,15 +192,22 @@ insert or ignore into media (
 def map_media(media_list_json) -> Dict[str, List[Dict]]:
     mapped_media = []
     for media_json in media_list_json:
+        try:
+            view_count = media_json["public_metrics"]["view_count"]
+        except KeyError:
+            view_count = None
+
         mapped_media.append(
             {
                 "media_key": media_json["media_key"],
-                # For videos, there is no url present in the data, just a
-                # media key and a preview url :/
-                "url": media_json.get("url", None) or media_json["preview_image_url"],
-                "type": media_json["type"],
-                "height": media_json["height"],
-                "width": media_json["width"],
+                "url": media_json.get("url"),
+                "type": media_json.get("type"),
+                "height": media_json.get("height"),
+                "width": media_json.get("width"),
+                "preview_image_url": media_json.get("preview_image_url"),
+                "alt_text": media_json.get("alt_text"),
+                "duration_ms": media_json.get("duration_ms"),
+                "view_count": view_count,
             }
         )
     return {"media": mapped_media}
