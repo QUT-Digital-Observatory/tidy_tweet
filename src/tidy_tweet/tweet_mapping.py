@@ -8,7 +8,7 @@ logger = getLogger(__name__)
 
 # --- SCHEMA VERSION ---
 # Update this every time the database schema is changed!
-SCHEMA_VERSION = "2021-12-09"
+SCHEMA_VERSION = "2022-03-10"
 
 
 sql_by_table: Dict[str, Dict[str, str]] = {}
@@ -24,7 +24,7 @@ create table url (
     field text not null, -- e.g. "description", "text" - which field of the source
                          -- object the URL is in
     url text not null, -- t.co shortened URL
-    expanded_url text not null,
+    expanded_url text,
     display_url text
 )
     """,
@@ -52,8 +52,8 @@ def map_urls(
                 "source_type": source_type,
                 "field": field,
                 "url": url_json["url"],
-                "expanded_url": url_json["expanded_url"],
-                "display_url": url_json["display_url"],
+                "expanded_url": url_json["expanded_url"] if "expanded_url" in url_json else None,
+                "display_url": url_json["display_url"] if "display_url" in url_json else None,
             }
         )
 
