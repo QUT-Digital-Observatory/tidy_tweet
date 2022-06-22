@@ -55,8 +55,8 @@ def map_urls(
                 # These fields are not guaranteed to be present - if a user
                 # copies and pastes a shortened url into a profile, it won't
                 # be expanded - eg https://twitter.com/SAHU_Finance
-                "expanded_url": url_json.get("expanded_url"),
-                "display_url": url_json.get("display_url"),
+                "expanded_url": url_json.get("expanded_url", None),
+                "display_url": url_json.get("display_url", None),
             }
         )
 
@@ -200,13 +200,13 @@ def map_media(media_list_json) -> Dict[str, List[Dict]]:
         mapped_media.append(
             {
                 "media_key": media_json["media_key"],
-                "url": media_json.get("url"),
-                "type": media_json.get("type"),
-                "height": media_json.get("height"),
-                "width": media_json.get("width"),
-                "preview_image_url": media_json.get("preview_image_url"),
-                "alt_text": media_json.get("alt_text"),
-                "duration_ms": media_json.get("duration_ms"),
+                "url": media_json.get("url", None),
+                "type": media_json.get("type", None),
+                "height": media_json.get("height", None),
+                "width": media_json.get("width", None),
+                "preview_image_url": media_json.get("preview_image_url", None),
+                "alt_text": media_json.get("alt_text", None),
+                "duration_ms": media_json.get("duration_ms", None),
                 "view_count": view_count,
             }
         )
@@ -261,14 +261,12 @@ def map_user(user_json) -> Dict[str, List[Dict]]:
         "name": user_json["name"],
         "url": user_json["url"],
         "profile_image_url": user_json["profile_image_url"],
-        "description": user_json["description"] if "description" in user_json else None,
+        "description": user_json.get("description", None),
         "created_at": user_json["created_at"],
         "protected": user_json["protected"],
         "verified": user_json["verified"],
-        "location": user_json["location"] if "location" in user_json else None,
-        "pinned_tweet_id": user_json["pinned_tweet_id"]
-        if "pinned_tweet_id" in user_json
-        else None,
+        "location": user_json.get("location", None),
+        "pinned_tweet_id": user_json.get("pinned_tweet_id", None),
     }
 
     mappings = {"user": [user_map]}
