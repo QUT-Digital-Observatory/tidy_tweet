@@ -8,7 +8,7 @@ logger = getLogger(__name__)
 
 # --- SCHEMA VERSION ---
 # Update this every time the database schema is changed!
-SCHEMA_VERSION = "2021-12-09"
+SCHEMA_VERSION = "2022-03-10"
 
 
 sql_by_table: Dict[str, Dict[str, str]] = {}
@@ -24,7 +24,7 @@ create table url (
     field text not null, -- e.g. "description", "text" - which field of the source
                          -- object the URL is in
     url text not null, -- t.co shortened URL
-    expanded_url text not null,
+    expanded_url text,
     display_url text
 )
     """,
@@ -52,8 +52,11 @@ def map_urls(
                 "source_type": source_type,
                 "field": field,
                 "url": url_json["url"],
-                "expanded_url": url_json["expanded_url"],
-                "display_url": url_json["display_url"],
+                # These fields are not guaranteed to be present - if a user
+                # copies and pastes a shortened url into a profile, it won't
+                # be expanded - eg https://twitter.com/SAHU_Finance
+                "expanded_url": url_json.get("expanded_url", None),
+                "display_url": url_json.get("display_url", None),
             }
         )
 
@@ -162,19 +165,25 @@ sql_by_table["media"] = {
     "create": """
 create table media (
     url text,
+    preview_image_url text,
     height integer,
     width integer,
     type text,
+    duration_ms integer,
+    view_count integer,
+    alt_text string,
     media_key text primary key
 )
     """,
     "insert": """
 insert or ignore into media (
     media_key, url, type,
-    height, width
+    height, width, preview_image_url, alt_text,
+    duration_ms, view_count
 ) values (
     :media_key, :url, :type,
-    :height, :width
+    :height, :width, :preview_image_url, :alt_text,
+    :duration_ms, :view_count
 )
     """,
 }
@@ -183,13 +192,22 @@ insert or ignore into media (
 def map_media(media_list_json) -> Dict[str, List[Dict]]:
     mapped_media = []
     for media_json in media_list_json:
+        try:
+            view_count = media_json["public_metrics"]["view_count"]
+        except KeyError:
+            view_count = None
+
         mapped_media.append(
             {
                 "media_key": media_json["media_key"],
-                "url": media_json["url"],
-                "type": media_json["type"],
-                "height": media_json["height"],
-                "width": media_json["width"],
+                "url": media_json.get("url", None),
+                "type": media_json.get("type", None),
+                "height": media_json.get("height", None),
+                "width": media_json.get("width", None),
+                "preview_image_url": media_json.get("preview_image_url", None),
+                "alt_text": media_json.get("alt_text", None),
+                "duration_ms": media_json.get("duration_ms", None),
+                "view_count": view_count,
             }
         )
     return {"media": mapped_media}
@@ -243,14 +261,12 @@ def map_user(user_json) -> Dict[str, List[Dict]]:
         "name": user_json["name"],
         "url": user_json["url"],
         "profile_image_url": user_json["profile_image_url"],
-        "description": user_json["description"] if "description" in user_json else None,
+        "description": user_json.get("description", None),
         "created_at": user_json["created_at"],
         "protected": user_json["protected"],
         "verified": user_json["verified"],
-        "location": user_json["location"] if "location" in user_json else None,
-        "pinned_tweet_id": user_json["pinned_tweet_id"]
-        if "pinned_tweet_id" in user_json
-        else None,
+        "location": user_json.get("location", None),
+        "pinned_tweet_id": user_json.get("pinned_tweet_id", None),
     }
 
     mappings = {"user": [user_map]}
@@ -329,7 +345,7 @@ def map_tweet(tweet_json, directly_collected: bool) -> Dict[str, List[Dict]]:
         "author_id": tweet_json["author_id"],
         "text": tweet_json["text"],
         "lang": tweet_json["lang"],
-        "source": tweet_json["source"],
+        "source": tweet_json.get("source", None),
         "possibly_sensitive": tweet_json["possibly_sensitive"],
         "reply_settings": tweet_json["reply_settings"],
         "created_at": tweet_json["created_at"],

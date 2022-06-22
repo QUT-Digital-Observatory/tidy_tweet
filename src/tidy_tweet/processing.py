@@ -26,7 +26,6 @@ def _load_page_object(page_json: Mapping, connection: sqlite3.Connection):
 
     # Metadata
     logger.debug("Processing metadata section of page")
-    add_mappings(mappings, mapping.map_tidy_tweet_metadata())
     if "__twarc" in page_json:
         add_mappings(mappings, mapping.map_twarc_metadata(page_json["__twarc"]))
 
@@ -35,14 +34,15 @@ def _load_page_object(page_json: Mapping, connection: sqlite3.Connection):
     if "media" in page_json["includes"]:
         add_mappings(mappings, mapping.map_media(page_json["includes"]["media"]))
 
-    for user in page_json["includes"]["users"]:
+    for user in page_json["includes"].get("users", []):
         add_mappings(mappings, mapping.map_user(user))
 
-    for tweet in page_json["includes"]["tweets"]:
+    for tweet in page_json["includes"].get("tweets", []):
         add_mappings(mappings, mapping.map_tweet(tweet, False))
 
     # Data
     logger.debug("Processing data section of page")
+
     #  - Some endpoints will return responses without data (for example if all
     #    of the tweets in a hydration call are no longer available)
     #  - For most endpoints this will be a list of tweets if present,

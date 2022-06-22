@@ -20,8 +20,9 @@ def test_one_arg(tmp_path):
     assert result.exit_code == 0
     assert db_path.exists()
 
-    # Just an empty existing database - should fail on validation
+    # Just an empty existing database - should not fail on validation because
+    # the database schema and structure are valid, just empty.
     result = runner.invoke(tidy_twarc_jsons, [str(db_path)])
-    assert result.exit_code != 0
+    assert result.exit_code == 0
 
     # Just a json file - should fail
