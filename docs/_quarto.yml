@@ -8,11 +8,12 @@ website:
       - href: index.qmd
         text: Home
       - tutorials.qmd
-      - about.qmd
   repo-url: https://github.com/QUT-Digital-Observatory/tidy_tweet
   repo-subdir: docs
   repo-branch: quarto-tutorial
   repo-actions: source
+  twitter-card:
+    creator: "@ObservatoryTeam"
 
 format:
   html:
