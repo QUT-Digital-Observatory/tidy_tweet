@@ -1,0 +1,4 @@
+/.quarto/
+tutorials/.ipynb_checkpoints/
+tutorials/*.db
+
