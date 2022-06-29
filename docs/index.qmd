@@ -1,7 +1,4 @@
----
-title: "docs"
----
+{{< include ../README.md >}}
 
-This is a Quarto website.
 
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
+This website is made with Quarto: <https://quarto.org/docs/websites>.
