@@ -25,7 +25,8 @@ create table tweet_url (
                          -- object the URL is in
     url text not null, -- t.co shortened URL
     expanded_url text,
-    display_url text
+    display_url text,
+    primary key (tweet_id, url) on conflict ignore
 )
     """,
     "insert": """
@@ -47,7 +48,8 @@ create table user_url (
                          -- object the URL is in
     url text not null, -- t.co shortened URL
     expanded_url text,
-    display_url text
+    display_url text,
+    primary key (user_id, url) on conflict ignore
 )
     """,
     "insert": """
@@ -94,7 +96,8 @@ create table tweet_hashtag (
     field text not null, -- e.g. "description", "text" - which field of the source
                          -- object the hashtag is in
     hashtag text not null,
-    hashtag_lower text -- Normalised, as hashtags are case-insensitive on Twitter
+    hashtag_lower text, -- Normalised, as hashtags are case-insensitive on Twitter
+    primary key (tweet_id, hashtag) on conflict ignore
 )
     """,
     "insert": """
@@ -115,7 +118,8 @@ create table user_hashtag (
     field text not null, -- e.g. "description", "text" - which field of the source
                          -- object the hashtag is in
     hashtag text not null,
-    hashtag_lower text -- Normalised, as hashtags are case-insensitive on Twitter
+    hashtag_lower text, -- Normalised, as hashtags are case-insensitive on Twitter
+    primary key (user_id, hashtag) on conflict ignore
 )
     """,
     "insert": """
@@ -158,7 +162,8 @@ create table tweet_mention (
     tweet_id text references tweet (id),
     field text not null, -- e.g. "description", "text" - which field of the source
                          -- object the mention is in
-    username text not null -- username of mentioned user
+    username text not null, -- username of mentioned user
+    primary key (tweet_id, username) on conflict ignore
 )
     """,
     "insert": """
@@ -178,7 +183,8 @@ create table user_mention (
     user_id text references user (id),
     field text not null, -- e.g. "description", "text" - which field of the source
                          -- object the mention is in
-    username text not null -- username of mentioned user
+    username text not null, -- username of mentioned user
+    primary key (user_id, username) on conflict ignore
 )
     """,
     "insert": """
