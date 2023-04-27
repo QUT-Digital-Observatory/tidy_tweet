@@ -30,7 +30,7 @@ def parse_table(statement: str) -> Tuple[str, List[Column]]:
     the comments in the create table statements which are currently where
     column descriptions are kept.
     """
-    lines = [l.strip() for l in statement.splitlines()]
+    lines = [line.strip() for line in statement.splitlines()]
 
     # Skip any blank lines at the start
     line = lines.pop(0).strip()
@@ -59,7 +59,7 @@ def parse_table(statement: str) -> Tuple[str, List[Column]]:
                     name=column_def[0],
                     type=column_def[1],
                     constraints=" ".join(column_def[2:]),
-                    comment=comment
+                    comment=comment,
                 )
             )
         elif len(comment) > 0:
@@ -85,8 +85,7 @@ def write_table_as_list(output: TextIO, table_name: str, columns: List[Column]):
         output.write(f"- **{col.name}** ({col.type}{col_constraints}){col_comment}\n")
 
 
-def write_schema_as_lists(output:TextIO):
-
+def write_schema_as_lists(output: TextIO):
     for statement in create_table_statements:
         parsed_name, parsed_columns = parse_table(statement)
 
@@ -113,7 +112,7 @@ def write_schema_as_mermaid_er(output: TextIO, with_comments=True):
         output.write(indent + f'"{table_name}"' + " {\n")
 
         for col in columns:
-            output.write(indent*2 + col.type + " " + col.name)
+            output.write(indent * 2 + col.type + " " + col.name)
 
             constraints = col.constraints
 
@@ -132,13 +131,15 @@ def write_schema_as_mermaid_er(output: TextIO, with_comments=True):
                 ref_start = constraints.find("references")
                 ref_end = constraints.find(")", ref_start)
 
-                _, ref_table, ref_col = constraints[ref_start:ref_end+1].split()
+                _, ref_table, ref_col = constraints[ref_start : ref_end + 1].split()
                 ref_col = ref_col.strip("()")
 
-                foreign_keys.append(ForeignKey(table_name, col.name, ref_table, ref_col))
+                foreign_keys.append(
+                    ForeignKey(table_name, col.name, ref_table, ref_col)
+                )
 
                 # remove the expression now we've dealt with it
-                constraints = constraints[:ref_start] + constraints[ref_end+1:]
+                constraints = constraints[:ref_start] + constraints[ref_end + 1 :]
                 # Get rid of any awkward double spaces in the middle
                 constraints.replace("  ", " ")
 
@@ -177,10 +178,23 @@ def write_schema_as_mermaid_er(output: TextIO, with_comments=True):
 
 
 @click.command()
-@click.argument('output_file', type=click.File('w'))
-@click.option('--diagram/--skip_diagram', default=True, help="Include (default) or skip a MermaidJS ER diagram of the schema")
-@click.option('--table_list/--skip_table_list', default=True, help="Include (default) or skip a series of text lists of tables and their columns")
-@click.option('--diagram_comments/--skip_diagram_comments', default=False, help="Include or skip (default) SQL comments from the MermaidJS diagram (for readability)",)
+@click.argument("output_file", type=click.File("w"))
+@click.option(
+    "--diagram/--skip_diagram",
+    default=True,
+    help="Include (default) or skip a MermaidJS ER diagram of the schema",
+)
+@click.option(
+    "--table_list/--skip_table_list",
+    default=True,
+    help="Include (default) or skip a series of text lists of tables and their columns",
+)
+@click.option(
+    "--diagram_comments/--skip_diagram_comments",
+    default=False,
+    help="Include or skip (default) SQL comments from the MermaidJS diagram (for "
+    "readability)",
+)
 def write_schema_docs(output_file, diagram, table_list, diagram_comments):
     output_file.write("# tidy_tweet database schema\n\n")
 
