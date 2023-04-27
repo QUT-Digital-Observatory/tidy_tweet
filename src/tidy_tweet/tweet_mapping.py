@@ -8,7 +8,7 @@ logger = getLogger(__name__)
 
 # --- SCHEMA VERSION ---
 # Update this every time the database schema is changed!
-SCHEMA_VERSION = "2022-03-10"
+SCHEMA_VERSION = "in development"
 
 
 sql_by_table: Dict[str, Dict[str, str]] = {}
@@ -16,11 +16,11 @@ sql_by_table: Dict[str, Dict[str, str]] = {}
 
 # --- Entities tables ---
 # URLs
-sql_by_table["url"] = {
+# URLs from tweets
+sql_by_table["tweet_url"] = {
     "create": """
-create table url (
-    source_id text, -- the id of the object (user or tweet) this URL is included in
-    source_type text, -- "user" or "tweet"
+create table tweet_url (
+    tweet_id text references tweet (id),
     field text not null, -- e.g. "description", "text" - which field of the source
                          -- object the URL is in
     url text not null, -- t.co shortened URL
@@ -29,11 +29,33 @@ create table url (
 )
     """,
     "insert": """
-insert into url (
-    source_id, source_type, field,
+insert into tweet_url (
+    tweet_id, field,
     url, expanded_url, display_url
 ) values (
-    :source_id, :source_type, :field,
+    :source_id, :field,
+    :url, :expanded_url, :display_url
+)
+    """,
+}
+# URLs from user profiles
+sql_by_table["user_url"] = {
+    "create": """
+create table user_url (
+    user_id text references user (id),
+    field text not null, -- e.g. "description", "text" - which field of the source
+                         -- object the URL is in
+    url text not null, -- t.co shortened URL
+    expanded_url text,
+    display_url text
+)
+    """,
+    "insert": """
+insert into user_url (
+    user_id, field,
+    url, expanded_url, display_url
+) values (
+    :source_id, :field,
     :url, :expanded_url, :display_url
 )
     """,
@@ -43,13 +65,13 @@ insert into url (
 def map_urls(
     source_id: str, source_type: str, field: str, url_json_list: List[Dict]
 ) -> Dict[str, List[Dict]]:
-    url_maps = []
+    table_name = "tweet_url" if source_type == "tweet" else "user_url"
 
+    url_maps = []
     for url_json in url_json_list:
         url_maps.append(
             {
                 "source_id": source_id,
-                "source_type": source_type,
                 "field": field,
                 "url": url_json["url"],
                 # These fields are not guaranteed to be present - if a user
@@ -60,26 +82,46 @@ def map_urls(
             }
         )
 
-    return {"url": url_maps}
+    return {table_name: url_maps}
 
 
 # Hashtags
-sql_by_table["hashtag"] = {
+# Hashtags from tweets
+sql_by_table["tweet_hashtag"] = {
     "create": """
-create table hashtag (
-    source_id text, -- the id of the object (user or tweet) this hashtag is included in
-    source_type text, -- "user" or "tweet"
+create table tweet_hashtag (
+    tweet_id text references tweet (id),
     field text not null, -- e.g. "description", "text" - which field of the source
                          -- object the hashtag is in
     tag text not null
 )
     """,
     "insert": """
-insert into hashtag (
-    source_id, source_type, field,
+insert into tweet_hashtag (
+    tweet_id, field,
     tag
 ) values (
-    :source_id, :source_type, :field,
+    :source_id, :field,
+    :tag
+)
+    """,
+}
+# Hashtags from user profiles
+sql_by_table["user_hashtag"] = {
+    "create": """
+create table user_hashtag (
+    user_id text references user (id),
+    field text not null, -- e.g. "description", "text" - which field of the source
+                         -- object the hashtag is in
+    tag text not null
+)
+    """,
+    "insert": """
+insert into user_hashtag (
+    user_id, field,
+    tag
+) values (
+    :source_id, :field,
     :tag
 )
     """,
@@ -89,35 +131,56 @@ insert into hashtag (
 def map_hashtags(
     source_id: str, source_type: str, field: str, tag_json_list: List[Dict]
 ) -> Dict[str, List[Dict]]:
+    table_name = "tweet_hashtag" if source_type == "tweet" else "user_hashtag"
+
     tag_mappings = [
         {
             "source_id": source_id,
-            "source_type": source_type,
             "field": field,
             "tag": t["tag"],
         }
         for t in tag_json_list
     ]
-    return {"hashtag": tag_mappings}
+    return {table_name: tag_mappings}
 
 
 # Mentions
-sql_by_table["mention"] = {
+# Mentions in tweets
+sql_by_table["tweet_mention"] = {
     "create": """
-create table mention (
-    source_id text, -- the id of the object (user or tweet) this mention is included in
-    source_type text, -- "user" or "tweet"
+create table tweet_mention (
+    tweet_id text references tweet (id),
     field text not null, -- e.g. "description", "text" - which field of the source
                          -- object the mention is in
     username text not null -- username of mentioned user
 )
     """,
     "insert": """
-insert into mention (
-    source_id, source_type, field,
+insert into tweet_mention (
+    tweet_id, field,
     username
 ) values (
-    :source_id, :source_type, :field,
+    :source_id, :field,
+    :username
+)
+    """,
+}
+# Mentions in user profiles
+sql_by_table["user_mention"] = {
+    "create": """
+create table user_mention (
+    user_id text references user (id),
+    field text not null, -- e.g. "description", "text" - which field of the source
+                         -- object the mention is in
+    username text not null -- username of mentioned user
+)
+    """,
+    "insert": """
+insert into user_mention (
+    user_id, field,
+    username
+) values (
+    :source_id, :field,
     :username
 )
     """,
@@ -127,16 +190,17 @@ insert into mention (
 def map_mentions(
     source_id: str, source_type: str, field: str, mention_json_list: List[Dict]
 ) -> Dict[str, List[Dict]]:
+    table_name = "tweet_mention" if source_type == "tweet" else "user_mention"
+
     mention_mappings = [
         {
             "source_id": source_id,
-            "source_type": source_type,
             "field": field,
             "username": t["username"],
         }
         for t in mention_json_list
     ]
-    return {"mention": mention_mappings}
+    return {table_name: mention_mappings}
 
 
 # Entities objects

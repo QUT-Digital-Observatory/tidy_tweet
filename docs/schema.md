@@ -4,23 +4,37 @@ This is an automatically generated document describing the tables and columns in
 
 ```mermaid
 erDiagram
-    "url" {
-        text source_id
-        text source_type
+    "tweet_url" {
+        text tweet_id FK
         text field
         text url
         text expanded_url
         text display_url
     }
-    "hashtag" {
-        text source_id
-        text source_type
+    "user_url" {
+        text user_id FK
+        text field
+        text url
+        text expanded_url
+        text display_url
+    }
+    "tweet_hashtag" {
+        text tweet_id FK
         text field
         text tag
     }
-    "mention" {
-        text source_id
-        text source_type
+    "user_hashtag" {
+        text user_id FK
+        text field
+        text tag
+    }
+    "tweet_mention" {
+        text tweet_id FK
+        text field
+        text username
+    }
+    "user_mention" {
+        text user_id FK
         text field
         text username
     }
@@ -72,6 +86,12 @@ erDiagram
         text metadata_key
         text metadata_value
     }
+    tweet_url |o--o{ tweet : "tweet"
+    user_url |o--o{ user : "user"
+    tweet_hashtag |o--o{ tweet : "tweet"
+    user_hashtag |o--o{ user : "user"
+    tweet_mention |o--o{ tweet : "tweet"
+    user_mention |o--o{ user : "user"
     tweet |o--o{ tweet : "retweeted tweet"
     tweet |o--o{ tweet : "quoted tweet"
     tweet |o--o{ tweet : "replied to tweet"
@@ -79,23 +99,37 @@ erDiagram
     tweet |o--o{ user : "author"
 ```
 
-Table **url**:
-- **source_id** (text): the id of the object (user or tweet) this URL is included in
-- **source_type** (text): "user" or "tweet"
+Table **tweet_url**:
+- **tweet_id** (text references tweet (id))
 - **field** (text not null): e.g. "description", "text" - which field of the source object the URL is in
 - **url** (text not null): t.co shortened URL
 - **expanded_url** (text)
 - **display_url** (text)
 
-Table **hashtag**:
-- **source_id** (text): the id of the object (user or tweet) this hashtag is included in
-- **source_type** (text): "user" or "tweet"
+Table **user_url**:
+- **user_id** (text references user (id))
+- **field** (text not null): e.g. "description", "text" - which field of the source object the URL is in
+- **url** (text not null): t.co shortened URL
+- **expanded_url** (text)
+- **display_url** (text)
+
+Table **tweet_hashtag**:
+- **tweet_id** (text references tweet (id))
 - **field** (text not null): e.g. "description", "text" - which field of the source object the hashtag is in
 - **tag** (text not null)
 
-Table **mention**:
-- **source_id** (text): the id of the object (user or tweet) this mention is included in
-- **source_type** (text): "user" or "tweet"
+Table **user_hashtag**:
+- **user_id** (text references user (id))
+- **field** (text not null): e.g. "description", "text" - which field of the source object the hashtag is in
+- **tag** (text not null)
+
+Table **tweet_mention**:
+- **tweet_id** (text references tweet (id))
+- **field** (text not null): e.g. "description", "text" - which field of the source object the mention is in
+- **username** (text not null): username of mentioned user
+
+Table **user_mention**:
+- **user_id** (text references user (id))
 - **field** (text not null): e.g. "description", "text" - which field of the source object the mention is in
 - **username** (text not null): username of mentioned user
 
