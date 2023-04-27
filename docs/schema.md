@@ -21,12 +21,14 @@ erDiagram
     "tweet_hashtag" {
         text tweet_id FK
         text field
-        text tag
+        text hashtag
+        text hashtag_lower
     }
     "user_hashtag" {
         text user_id FK
         text field
-        text tag
+        text hashtag
+        text hashtag_lower
     }
     "tweet_mention" {
         text tweet_id FK
@@ -116,12 +118,14 @@ Table **user_url**:
 Table **tweet_hashtag**:
 - **tweet_id** (text references tweet (id))
 - **field** (text not null): e.g. "description", "text" - which field of the source object the hashtag is in
-- **tag** (text not null)
+- **hashtag** (text not null)
+- **hashtag_lower** (text): Normalised, as hashtags are case-insensitive on Twitter
 
 Table **user_hashtag**:
 - **user_id** (text references user (id))
 - **field** (text not null): e.g. "description", "text" - which field of the source object the hashtag is in
-- **tag** (text not null)
+- **hashtag** (text not null)
+- **hashtag_lower** (text): Normalised, as hashtags are case-insensitive on Twitter
 
 Table **tweet_mention**:
 - **tweet_id** (text references tweet (id))
