@@ -93,16 +93,17 @@ create table tweet_hashtag (
     tweet_id text references tweet (id),
     field text not null, -- e.g. "description", "text" - which field of the source
                          -- object the hashtag is in
-    tag text not null
+    hashtag text not null,
+    hashtag_lower text -- Normalised, as hashtags are case-insensitive on Twitter
 )
     """,
     "insert": """
 insert into tweet_hashtag (
     tweet_id, field,
-    tag
+    hashtag, hashtag_lower
 ) values (
     :source_id, :field,
-    :tag
+    :hashtag, :hashtag_lower
 )
     """,
 }
@@ -113,16 +114,17 @@ create table user_hashtag (
     user_id text references user (id),
     field text not null, -- e.g. "description", "text" - which field of the source
                          -- object the hashtag is in
-    tag text not null
+    hashtag text not null,
+    hashtag_lower text -- Normalised, as hashtags are case-insensitive on Twitter
 )
     """,
     "insert": """
 insert into user_hashtag (
     user_id, field,
-    tag
+    hashtag, hashtag_lower
 ) values (
     :source_id, :field,
-    :tag
+    :hashtag, :hashtag_lower
 )
     """,
 }
@@ -137,7 +139,11 @@ def map_hashtags(
         {
             "source_id": source_id,
             "field": field,
-            "tag": t["tag"],
+            "hashtag": t["tag"],
+            # Note that lower() could be done in SQLite by making hashtag_lower a
+            # generated column, however the SQLite lower() only handles ASCII while
+            # the python str.lower() handles Unicode
+            "hashtag_lower": t["tag"].lower(),
         }
         for t in tag_json_list
     ]
