@@ -18,7 +18,7 @@ class ForeignKey(NamedTuple):
     ref_column: str
 
 
-def parse_table(statement: str) -> Tuple[str, List[Column]]:
+def parse_table(statement: str) -> Tuple[str, List[Column], str]:
     """
     Parses the create table statements in tidy_tweet.tweet mapping to extract
     the database schema. This parser relies very much on the conventions used
@@ -40,6 +40,8 @@ def parse_table(statement: str) -> Tuple[str, List[Column]]:
     # first line will be "create table ___ ("
     table_name = line.split()[2]
 
+    table_comment = ""
+
     columns = []
 
     for line in lines:
@@ -49,11 +51,34 @@ def parse_table(statement: str) -> Tuple[str, List[Column]]:
         column_def, _, comment = line.partition("--")
         # if there is no "--", the whole line will be in column_def
 
-        column_def = column_def.strip().rstrip(",").split()
+        column_def = column_def.strip().rstrip(",")
         comment = comment.strip()
 
-        if len(column_def) > 1:
-            # This line has a column definition
+        if column_def.startswith("primary key"):
+            # This line is actually a table constraint
+            column_def, _, conditions = column_def.rpartition(")")
+            _, _, key_columns = column_def.partition("(")
+            key_columns = key_columns.replace(",", " ").split()
+            conditions = "primary key " + conditions.strip()
+
+            if table_comment != "":
+                table_comment = table_comment + "; " + conditions
+            else:
+                table_comment = conditions
+
+            # Add to constraints for appropriate columns
+            for i, col in enumerate(columns):
+                if col.name in key_columns:
+                    del columns[i]
+                    columns.insert(i, Column(
+                        name=col.name,
+                        type=col.type,
+                        constraints="primary key " + col.constraints,
+                        comment=col.comment
+                    ))
+        elif " " in column_def:
+            # This line has at least two words and hence a column definition
+            column_def = column_def.split()
             columns.append(
                 Column(
                     name=column_def[0],
@@ -69,27 +94,32 @@ def parse_table(statement: str) -> Tuple[str, List[Column]]:
             prev_column = prev_column._replace(comment=comment)
             columns.append(prev_column)
 
-    return table_name, columns
+    return table_name, columns, table_comment
 
 
-def write_table_as_list(output: TextIO, table_name: str, columns: List[Column]):
+def write_table_as_list(output: TextIO, table_name: str, columns: List[Column], table_comment: str):
     """
     Prints a markdown-formatted list of the table columns
     """
-    output.write(f"Table **{table_name}**:\n")
+    output.write(f"Table **{table_name}**:\n\n")
 
     for col in columns:
         col_constraints = (" " + col.constraints) if col.constraints else ""
         col_comment = (": " + col.comment) if col.comment else ""
 
         output.write(f"- **{col.name}** ({col.type}{col_constraints}){col_comment}\n")
+    else:
+        output.write("\n")
+
+    if len(table_comment) > 0:
+        output.write(table_comment + "\n\n")
 
 
 def write_schema_as_lists(output: TextIO):
     for statement in create_table_statements:
-        parsed_name, parsed_columns = parse_table(statement)
+        parsed_name, parsed_columns, table_comment = parse_table(statement)
 
-        write_table_as_list(output, parsed_name, parsed_columns)
+        write_table_as_list(output, parsed_name, parsed_columns, table_comment)
         output.write("\n")
 
 
@@ -107,7 +137,7 @@ def write_schema_as_mermaid_er(output: TextIO, with_comments=True):
 
     # Table definitions
     for statement in create_table_statements:
-        table_name, columns = parse_table(statement)
+        table_name, columns, _ = parse_table(statement)
 
         output.write(indent + f'"{table_name}"' + " {\n")
 
