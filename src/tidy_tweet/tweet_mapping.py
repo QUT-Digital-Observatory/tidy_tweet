@@ -1,18 +1,29 @@
 from typing import Dict, List
-from tidy_tweet.utilities import add_mappings
+from tidy_tweet.utilities import add_mappings, clean_sql_statement
+from json import dumps
 from logging import getLogger
-
 
 logger = getLogger(__name__)
 
 
+try:
+    from tidy_tweet._version import version
+except ImportError:
+    version = "unspecified"
+    logger.warn(
+        "WARNING: cannot store tidy_tweet version in database as version could not "
+        "be fetched. If running tidy_tweet from source, try installing package in "
+        "editable mode."
+    )
+
+
 # --- SCHEMA VERSION ---
 # Update this every time the database schema is changed!
-SCHEMA_VERSION = "in development"
+SCHEMA_VERSION = "2022-05-22"
 
 
 sql_by_table: Dict[str, Dict[str, str]] = {}
-
+sql_views: Dict[str, str] = {}
 
 # --- Entities tables ---
 # URLs
@@ -252,7 +263,7 @@ create table media (
 )
     """,
     "insert": """
-insert or ignore into media (
+insert or replace into media (
     media_key, url, type,
     height, width, preview_image_url, alt_text,
     duration_ms, view_count
@@ -299,7 +310,7 @@ sql_by_table["user"] = {
 create table user (
     name text,
     profile_image_url text,
-    id text primary key,
+    id text,
     created_at text,
     protected text,
     description text,
@@ -307,7 +318,10 @@ create table user (
     pinned_tweet_id text,
     verified integer, -- boolean
     url text,
-    username text
+    username text,
+    page_id integer references results_page (id),
+    source_file text references results_page (filename),
+    primary key (id, page_id)
 )
     """,
     "insert": """
@@ -330,7 +344,7 @@ insert or ignore into user (
 }
 
 
-def map_user(user_json) -> Dict[str, List[Dict]]:
+def map_user(user_json, source_file, page_id) -> Dict[str, List[Dict]]:
     user_map = {
         "id": user_json["id"],
         "username": user_json["username"],
@@ -343,6 +357,8 @@ def map_user(user_json) -> Dict[str, List[Dict]]:
         "verified": user_json["verified"],
         "location": user_json.get("location", None),
         "pinned_tweet_id": user_json.get("pinned_tweet_id", None),
+        "source_file": source_file,
+        "page_id": page_id
     }
 
     mappings = {"user": [user_map]}
@@ -365,7 +381,8 @@ def map_user(user_json) -> Dict[str, List[Dict]]:
 sql_by_table["tweet"] = {
     "create": """
 create table tweet (
-    id text primary key,
+    id text,
+    page_id integer references results_page (id),
     reply_settings text,
     conversation_id text,
     created_at text,
@@ -382,7 +399,9 @@ create table tweet (
     quote_count integer,
     reply_count integer,
     retweet_count integer,
-    directly_collected integer -- boolean
+    source_file text references results_page (filename),
+    directly_collected integer, -- boolean
+    primary key (id, page_id)
 )
     """,
     "insert": """
@@ -397,7 +416,7 @@ insert or ignore into tweet (
     replied_to_tweet_id,
     in_reply_to_user_id,
     like_count, quote_count, reply_count, retweet_count,
-    directly_collected
+    directly_collected, source_file, page_id
 ) values (
     :id, :author_id,
     :text, :lang, :source,
@@ -409,13 +428,13 @@ insert or ignore into tweet (
     :replied_to_tweet_id,
     :in_reply_to_user_id,
     :like_count, :quote_count, :reply_count, :retweet_count,
-    :directly_collected
+    :directly_collected, :source_file, :page_id
 )
     """,
 }
 
 
-def map_tweet(tweet_json, directly_collected: bool) -> Dict[str, List[Dict]]:
+def map_tweet(tweet_json, directly_collected: bool, source_file: str, page_id) -> Dict[str, List[Dict]]:
     tweet_map = {
         "id": tweet_json["id"],
         "author_id": tweet_json["author_id"],
@@ -432,6 +451,8 @@ def map_tweet(tweet_json, directly_collected: bool) -> Dict[str, List[Dict]]:
         "reply_count": tweet_json["public_metrics"]["reply_count"],
         "retweet_count": tweet_json["public_metrics"]["retweet_count"],
         "directly_collected": directly_collected,
+        "source_file": source_file,
+        "page_id": page_id
     }
 
     if "in_reply_to_user_id" in tweet_json:
@@ -469,50 +490,118 @@ def map_tweet(tweet_json, directly_collected: bool) -> Dict[str, List[Dict]]:
 
 
 # --- Metadata ---
-
-sql_by_table["_metadata"] = {
+# --- Results files
+sql_by_table["results_page"] = {
     "create": """
-create table _metadata (
-    metadata_key text, --primary key on conflict fail,
-    metadata_value text
+create table results_page (
+    id integer primary key,
+    file_name text,
+    oldest_id text,  -- oldest tweet id in page
+    newest_id text,  -- newest tweet id in page
+    result_count text,  -- count given in API response
+    inserted_at text default current_timestamp,
+    twarc_version text,
+    tidy_tweet_version text,
+    retrieved_at text, -- time response from twitter was recorded
+    request_url text,
+    additional_metadata text -- extra metadata from twarc and twitter
 )
     """,
     "insert": """
-insert into _metadata (metadata_key, metadata_value)
-    values (:metadata_key, :metadata_value)
-    """,
+insert into results_page (
+    file_name,
+    oldest_id, newest_id, result_count, 
+    retrieved_at, request_url,
+    twarc_version, tidy_tweet_version,
+    additional_metadata
+) values (
+    :file_name,
+    :oldest_id, :newest_id, :result_count, 
+    :retrieved_at, :request_url,
+    :twarc_version, :tidy_tweet_version,
+    :additional_metadata
+)
+    """
 }
+sql_views["results_file"] = """
+create view results_file as
+select
+    file_name,
+    min(oldest_id) as oldest_id,  -- oldest tweet id in file
+    max(newest_id) as newest_id,  -- newest tweet id in file
+    sum(result_count) as result_count,  -- count given in API response (sum of all page result counts)
+    max(inserted_at) as inserted_at,
+    twarc_version,
+    min(retrieved_at) as retrieved_at_min, -- earliest retrieval time for pages in file
+    max(retrieved_at) as retrieved_at_max -- latest retrieval time for pages in file
+from results_page
+group by file_name
+"""
+
+# def map_file_metadata(filename: str, page_metadata: List[Dict]) -> Dict[str, List[Dict]]:
+#     metadata = {"file_name": filename}
+#
+#     # Tidy tweet metadata
+#     metadata["tidy_tweet_version"] = version
+#
+#     # Condense oldest_id, newest_id, result_count, and retrieved_at max/min
+#     metadata["oldest_id"] = min([page["oldest_id"] for page in page_metadata])
+#     metadata["newest_id"] = max([page["newest_id"] for page in page_metadata])
+#     metadata["result_count"] = sum([page["result_count"] for page in page_metadata])
+#     metadata["retrieved_at_min"] = min([page["retrieved_at"] for page in page_metadata])
+#     metadata["retrieved_at_max"] = max([page["retrieved_at"] for page in page_metadata])
+#
+#     # Values that are the same for each page
+#     metadata["twarc_version"] = page_metadata[0]["twarc_version"]
+#
+#     # Extra info
+#     extras = []
+#     for page in page_metadata:
+#         extras.append(page.pop("additional_metadata"))
+#
+#     metadata["additional_metadata"] = dumps(extras)
+#     metadata["result_info_per_page"] = dumps([
+#         {
+#             "oldest_id": page["oldest_id"],
+#             "newest_id": page["newest_id"],
+#             "result_count": page["result_count"],
+#             "retrieved_at": page["retrieved_at"],
+#             "request_url": page["request_url"]
+#         }
+#         for page in page_metadata
+#     ])
+#
+#     return metadata
 
 
-def map_twarc_metadata(twarc_metadata_json) -> Dict[str, List[Dict]]:
-    # Rename the "version" key for clarity
-    twarc_metadata_json["twarc_version"] = twarc_metadata_json.pop("version")
-    return {
-        "_metadata": [
-            {"metadata_key": k, "metadata_value": v}
-            for k, v in twarc_metadata_json.items()
-        ]
-    }
+def map_page_metadata(filename:str, page_metadata_json: Dict, twarc_metadata_json: Dict) -> Dict:
+    metadata = {"file_name": filename}
 
+    # Tidy tweet metadata
+    metadata["tidy_tweet_version"] = version
 
-def map_tidy_tweet_metadata() -> Dict[str, List[Dict]]:
-    try:
-        from tidy_tweet._version import version
-    except ImportError:
-        version = "unspecified"
-        logger.warn(
-            "WARNING: cannot store tidy_tweet version in database as version could not "
-            "be fetched. If running tidy_tweet from source, try installing package in "
-            "editable mode."
-        )
+    # Twitter result page metadata
+    key_columns = ["oldest_id", "newest_id", "result_count"]
+    for key in key_columns:
+        metadata[key] = page_metadata_json.pop(key, None)
 
-    # TODO: how to handle db with additions of files with different library versions?
-    return {
-        "_metadata": [
-            {"metadata_key": "schema_version", "metadata_value": SCHEMA_VERSION},
-            {"metadata_key": "tidy_tweet_version", "metadata_value": version},
-        ]
-    }
+    # Twarc metadata
+    metadata["twarc_version"] = twarc_metadata_json.pop("version", None)
+    metadata["request_url"] = twarc_metadata_json.pop("url", None)
+    metadata["retrieved_at"] = twarc_metadata_json.pop("retrieved_at")
+
+    # Any unexpected items in either metadata should be retained
+    extras = {}
+
+    if len(page_metadata_json) > 0:
+        extras["twarc"] = page_metadata_json
+
+    if len(twarc_metadata_json) > 0:
+        extras["twarc"] = twarc_metadata_json
+
+    metadata["additional_metadata"] = dumps(extras)
+
+    return metadata
 
 
 # --- Validation ---
@@ -523,16 +612,6 @@ for table_sql in sql_by_table.values():
 
 
 # --- Convenience lists ---
-def clean_sql_statement(original: str) -> str:
-    """
-    Cleans up SQL statements so that they end with a semicolon and don't have any
-    leading or trailing whitespace
-    """
-    clean = original.strip()
-    if not clean.endswith(";"):
-        clean = clean + ";"
-    return clean
-
 
 create_table_statements = [
     clean_sql_statement(tbl["create"]) for tbl in sql_by_table.values()
