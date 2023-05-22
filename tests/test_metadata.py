@@ -8,4 +8,5 @@ def test_get_tidy_tweet_version():
 
     assert version != "unknown" and version != "unspecified"
 
+
 # TODO: metadata test

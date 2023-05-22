@@ -95,7 +95,10 @@ def initialise_sqlite(
             logger.debug("Created database tables: " + str(created_tables))
             assert len(created_tables) == len(mapping.create_table_statements)
             cursor.execute("create table schema_version (schema_version text)")
-            cursor.execute("insert into schema_version values (:version)", {"version": mapping.SCHEMA_VERSION})
+            cursor.execute(
+                "insert into schema_version values (:version)",
+                {"version": mapping.SCHEMA_VERSION},
+            )
 
         logger.info("The database schema has been initialised")
 

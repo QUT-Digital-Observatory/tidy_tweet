@@ -358,7 +358,7 @@ def map_user(user_json, source_file, page_id) -> Dict[str, List[Dict]]:
         "location": user_json.get("location", None),
         "pinned_tweet_id": user_json.get("pinned_tweet_id", None),
         "source_file": source_file,
-        "page_id": page_id
+        "page_id": page_id,
     }
 
     mappings = {"user": [user_map]}
@@ -434,7 +434,9 @@ insert or ignore into tweet (
 }
 
 
-def map_tweet(tweet_json, directly_collected: bool, source_file: str, page_id) -> Dict[str, List[Dict]]:
+def map_tweet(
+    tweet_json, directly_collected: bool, source_file: str, page_id
+) -> Dict[str, List[Dict]]:
     tweet_map = {
         "id": tweet_json["id"],
         "author_id": tweet_json["author_id"],
@@ -452,7 +454,7 @@ def map_tweet(tweet_json, directly_collected: bool, source_file: str, page_id) -
         "retweet_count": tweet_json["public_metrics"]["retweet_count"],
         "directly_collected": directly_collected,
         "source_file": source_file,
-        "page_id": page_id
+        "page_id": page_id,
     }
 
     if "in_reply_to_user_id" in tweet_json:
@@ -521,9 +523,11 @@ insert into results_page (
     :twarc_version, :tidy_tweet_version,
     :additional_metadata
 )
-    """
+    """,
 }
-sql_views["results_file"] = """
+sql_views[
+    "results_file"
+] = """
 create view results_file as
 select
     file_name,
@@ -574,7 +578,9 @@ group by file_name
 #     return metadata
 
 
-def map_page_metadata(filename:str, page_metadata_json: Dict, twarc_metadata_json: Dict) -> Dict:
+def map_page_metadata(
+    filename: str, page_metadata_json: Dict, twarc_metadata_json: Dict
+) -> Dict:
     metadata = {"file_name": filename}
 
     # Tidy tweet metadata

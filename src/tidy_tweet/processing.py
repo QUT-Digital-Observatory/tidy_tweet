@@ -9,7 +9,9 @@ from tidy_tweet.utilities import add_mappings
 logger = getLogger(__name__)
 
 
-def _load_page_object(file_name: str, page_json: Mapping, connection: sqlite3.Connection):
+def _load_page_object(
+    file_name: str, page_json: Mapping, connection: sqlite3.Connection
+):
     """
     Takes a page of twarc Twitter API results and loads it into the database.
 
@@ -31,7 +33,7 @@ def _load_page_object(file_name: str, page_json: Mapping, connection: sqlite3.Co
     # Write this first so we can get the page id
     db.execute(
         mapping.sql_by_table["results_page"]["insert"],
-        mapping.map_page_metadata(file_name, twitter_metadata, twarc_metadata)
+        mapping.map_page_metadata(file_name, twitter_metadata, twarc_metadata),
     )
     page_info = (file_name, db.lastrowid)
 
