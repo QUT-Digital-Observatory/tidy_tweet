@@ -1,9 +1,11 @@
-from tidy_tweet.tweet_mapping import map_tidy_tweet_metadata
+from tidy_tweet.utilities import get_library_version
 
 
 def test_get_tidy_tweet_version():
     """Just tests the function runs, can't meaningfully test values"""
 
-    code_versions = map_tidy_tweet_metadata()
+    version = get_library_version()
 
-    assert len(code_versions["_metadata"]) == 2
+    assert version != "unknown" and version != "unspecified"
+
+# TODO: metadata test

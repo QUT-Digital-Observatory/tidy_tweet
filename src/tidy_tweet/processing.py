@@ -9,7 +9,7 @@ from tidy_tweet.utilities import add_mappings
 logger = getLogger(__name__)
 
 
-def _load_page_object(page_json: Mapping, connection: sqlite3.Connection):
+def _load_page_object(file_name: str, page_json: Mapping, connection: sqlite3.Connection):
     """
     Takes a page of twarc Twitter API results and loads it into the database.
 
@@ -26,8 +26,14 @@ def _load_page_object(page_json: Mapping, connection: sqlite3.Connection):
 
     # Metadata
     logger.debug("Processing metadata section of page")
-    if "__twarc" in page_json:
-        add_mappings(mappings, mapping.map_twarc_metadata(page_json["__twarc"]))
+    twitter_metadata = page_json.get("meta", {})
+    twarc_metadata = page_json.get("__twarc", {})
+    # Write this first so we can get the page id
+    db.execute(
+        mapping.sql_by_table["results_page"]["insert"],
+        mapping.map_page_metadata(file_name, twitter_metadata, twarc_metadata)
+    )
+    page_info = (file_name, db.lastrowid)
 
     # Includes
     logger.debug("Processing includes section of page")
@@ -35,10 +41,10 @@ def _load_page_object(page_json: Mapping, connection: sqlite3.Connection):
         add_mappings(mappings, mapping.map_media(page_json["includes"]["media"]))
 
     for user in page_json["includes"].get("users", []):
-        add_mappings(mappings, mapping.map_user(user))
+        add_mappings(mappings, mapping.map_user(user, *page_info))
 
     for tweet in page_json["includes"].get("tweets", []):
-        add_mappings(mappings, mapping.map_tweet(tweet, False))
+        add_mappings(mappings, mapping.map_tweet(tweet, False, *page_info))
 
     # Data
     logger.debug("Processing data section of page")
@@ -56,7 +62,7 @@ def _load_page_object(page_json: Mapping, connection: sqlite3.Connection):
         tweets = [tweet_or_tweets]
 
     for tweet in tweets:
-        add_mappings(mappings, mapping.map_tweet(tweet, True))
+        add_mappings(mappings, mapping.map_tweet(tweet, True, *page_info))
 
     logger.debug(f"About to write to {len(mappings)} tables")
     for table, table_mappings in mappings.items():
@@ -93,7 +99,7 @@ def load_twarc_json_to_sqlite(
             page_num = page_num + 1
             logger.info(f"Processing page {page_num} of {filename}")
             page_json = json.loads(page)
-            _load_page_object(page_json, connection)
+            _load_page_object(str(filename), page_json, connection)
 
         logger.info(f"All {page_num} pages of {filename} processed")
     return page_num

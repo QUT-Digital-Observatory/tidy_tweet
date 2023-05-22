@@ -83,10 +83,10 @@ def initialise_sqlite(
 
         # Initialise the schema related metadata first, otherwise if an
         # insert fails we end up with a schema version of null.
-        cursor.executemany(
-            mapping.sql_by_table["_metadata"]["insert"],
-            mapping.map_tidy_tweet_metadata()["_metadata"],
-        )
+        # cursor.executemany(
+        #     mapping.sql_by_table["_metadata"]["insert"],
+        #     mapping.map_tidy_tweet_metadata()["_metadata"],
+        # )
 
         if not allow_existing_database:
             # ".tables" only works in the sqlite shell!
@@ -94,6 +94,8 @@ def initialise_sqlite(
             created_tables = cursor.fetchall()
             logger.debug("Created database tables: " + str(created_tables))
             assert len(created_tables) == len(mapping.create_table_statements)
+            cursor.execute("create table schema_version (schema_version text)")
+            cursor.execute("insert into schema_version values (:version)", {"version": mapping.SCHEMA_VERSION})
 
         logger.info("The database schema has been initialised")
 
@@ -113,16 +115,14 @@ def check_database_version(db_name):
         db = conn.cursor()
         db.execute(
             """
-            select metadata_value from _metadata
-            where metadata_key='schema_version'
+            select schema_version from schema_version
             """
         )
         result = db.fetchone() or []
         db_schema_version = None if len(result) == 0 else result[0]
         db.execute(
             """
-            select metadata_value from _metadata
-            where metadata_key='tidy_tweet_version'
+            select max(tidy_tweet_version) from results_page
             """
         )
         result = db.fetchone() or []
