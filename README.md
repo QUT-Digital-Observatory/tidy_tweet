@@ -46,7 +46,7 @@ page object, and no commas between top-level objects.
 After processing your Twitter results pages with tidy_tweet (see [Usage](#usage)), you will have an 
 [SQLite][sqlite] database file at the location you specified.
 
-Database schema will be published here as soon as the initial schema is finalised.
+See the [current database schema](docs/schema.md).
 
 ## Prerequisites
 

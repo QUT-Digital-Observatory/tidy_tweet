@@ -5,40 +5,40 @@ This is an automatically generated document describing the tables and columns in
 ```mermaid
 erDiagram
     "tweet_url" {
-        text tweet_id FK
+        text tweet_id PK, FK
         text field
-        text url
+        text url PK
         text expanded_url
         text display_url
     }
     "user_url" {
-        text user_id FK
+        text user_id PK, FK
         text field
-        text url
+        text url PK
         text expanded_url
         text display_url
     }
     "tweet_hashtag" {
-        text tweet_id FK
+        text tweet_id PK, FK
         text field
-        text hashtag
+        text hashtag PK
         text hashtag_lower
     }
     "user_hashtag" {
-        text user_id FK
+        text user_id PK, FK
         text field
-        text hashtag
+        text hashtag PK
         text hashtag_lower
     }
     "tweet_mention" {
-        text tweet_id FK
+        text tweet_id PK, FK
         text field
-        text username
+        text username PK
     }
     "user_mention" {
-        text user_id FK
+        text user_id PK, FK
         text field
-        text username
+        text username PK
     }
     "media" {
         text url
@@ -63,9 +63,12 @@ erDiagram
         integer verified
         text url
         text username
+        integer page_id PK, FK
+        text source_file FK
     }
     "tweet" {
         text id PK
+        integer page_id PK, FK
         text reply_settings
         text conversation_id
         text created_at
@@ -82,11 +85,21 @@ erDiagram
         integer quote_count
         integer reply_count
         integer retweet_count
+        text source_file FK
         integer directly_collected
     }
-    "_metadata" {
-        text metadata_key
-        text metadata_value
+    "results_page" {
+        integer id PK
+        text file_name
+        text oldest_id
+        text newest_id
+        text result_count
+        text inserted_at
+        text twarc_version
+        text tidy_tweet_version
+        text retrieved_at
+        text request_url
+        text additional_metadata
     }
     tweet_url |o--o{ tweet : "tweet"
     user_url |o--o{ user : "user"
@@ -94,50 +107,79 @@ erDiagram
     user_hashtag |o--o{ user : "user"
     tweet_mention |o--o{ tweet : "tweet"
     user_mention |o--o{ user : "user"
+    user |o--o{ results_page : "page"
+    user |o--o{ results_page : "source file"
+    tweet |o--o{ results_page : "page"
     tweet |o--o{ tweet : "retweeted tweet"
     tweet |o--o{ tweet : "quoted tweet"
     tweet |o--o{ tweet : "replied to tweet"
     tweet |o--o{ user : "in reply to user"
     tweet |o--o{ user : "author"
+    tweet |o--o{ results_page : "source file"
 ```
 
 Table **tweet_url**:
-- **tweet_id** (text references tweet (id))
+
+- **tweet_id** (text primary key references tweet (id))
 - **field** (text not null): e.g. "description", "text" - which field of the source object the URL is in
-- **url** (text not null): t.co shortened URL
+- **url** (text primary key not null): t.co shortened URL
 - **expanded_url** (text)
 - **display_url** (text)
+
+primary key on conflict ignore
+
 
 Table **user_url**:
-- **user_id** (text references user (id))
+
+- **user_id** (text primary key references user (id))
 - **field** (text not null): e.g. "description", "text" - which field of the source object the URL is in
-- **url** (text not null): t.co shortened URL
+- **url** (text primary key not null): t.co shortened URL
 - **expanded_url** (text)
 - **display_url** (text)
 
+primary key on conflict ignore
+
+
 Table **tweet_hashtag**:
-- **tweet_id** (text references tweet (id))
+
+- **tweet_id** (text primary key references tweet (id))
 - **field** (text not null): e.g. "description", "text" - which field of the source object the hashtag is in
-- **hashtag** (text not null)
+- **hashtag** (text primary key not null)
 - **hashtag_lower** (text): Normalised, as hashtags are case-insensitive on Twitter
+
+primary key on conflict ignore
+
 
 Table **user_hashtag**:
-- **user_id** (text references user (id))
+
+- **user_id** (text primary key references user (id))
 - **field** (text not null): e.g. "description", "text" - which field of the source object the hashtag is in
-- **hashtag** (text not null)
+- **hashtag** (text primary key not null)
 - **hashtag_lower** (text): Normalised, as hashtags are case-insensitive on Twitter
 
+primary key on conflict ignore
+
+
 Table **tweet_mention**:
-- **tweet_id** (text references tweet (id))
+
+- **tweet_id** (text primary key references tweet (id))
 - **field** (text not null): e.g. "description", "text" - which field of the source object the mention is in
-- **username** (text not null): username of mentioned user
+- **username** (text primary key not null): username of mentioned user
+
+primary key on conflict ignore
+
 
 Table **user_mention**:
-- **user_id** (text references user (id))
+
+- **user_id** (text primary key references user (id))
 - **field** (text not null): e.g. "description", "text" - which field of the source object the mention is in
-- **username** (text not null): username of mentioned user
+- **username** (text primary key not null): username of mentioned user
+
+primary key on conflict ignore
+
 
 Table **media**:
+
 - **url** (text)
 - **preview_image_url** (text)
 - **height** (integer)
@@ -148,10 +190,12 @@ Table **media**:
 - **alt_text** (string)
 - **media_key** (text primary key)
 
+
 Table **user**:
+
 - **name** (text)
 - **profile_image_url** (text)
-- **id** (text primary key)
+- **id** (text primary key )
 - **created_at** (text)
 - **protected** (text)
 - **description** (text)
@@ -160,9 +204,16 @@ Table **user**:
 - **verified** (integer): boolean
 - **url** (text)
 - **username** (text)
+- **page_id** (integer primary key references results_page (id))
+- **source_file** (text references results_page (filename))
+
+primary key 
+
 
 Table **tweet**:
-- **id** (text primary key)
+
+- **id** (text primary key )
+- **page_id** (integer primary key references results_page (id))
 - **reply_settings** (text)
 - **conversation_id** (text)
 - **created_at** (text)
@@ -179,9 +230,24 @@ Table **tweet**:
 - **quote_count** (integer)
 - **reply_count** (integer)
 - **retweet_count** (integer)
+- **source_file** (text references results_page (filename))
 - **directly_collected** (integer): boolean
 
-Table **_metadata**:
-- **metadata_key** (text): primary key on conflict fail,
-- **metadata_value** (text)
+primary key 
+
+
+Table **results_page**:
+
+- **id** (integer primary key)
+- **file_name** (text)
+- **oldest_id** (text): oldest tweet id in page
+- **newest_id** (text): newest tweet id in page
+- **result_count** (text): count given in API response
+- **inserted_at** (text default current_timestamp)
+- **twarc_version** (text)
+- **tidy_tweet_version** (text)
+- **retrieved_at** (text): time response from twitter was recorded
+- **request_url** (text)
+- **additional_metadata** (text): extra metadata from twarc and twitter
+
 
