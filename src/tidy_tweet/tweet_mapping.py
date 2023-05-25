@@ -512,13 +512,13 @@ create table results_page (
     "insert": """
 insert into results_page (
     file_name,
-    oldest_id, newest_id, result_count, 
+    oldest_id, newest_id, result_count,
     retrieved_at, request_url,
     twarc_version, tidy_tweet_version,
     additional_metadata
 ) values (
     :file_name,
-    :oldest_id, :newest_id, :result_count, 
+    :oldest_id, :newest_id, :result_count,
     :retrieved_at, :request_url,
     :twarc_version, :tidy_tweet_version,
     :additional_metadata
@@ -533,7 +533,8 @@ select
     file_name,
     min(oldest_id) as oldest_id,  -- oldest tweet id in file
     max(newest_id) as newest_id,  -- newest tweet id in file
-    sum(result_count) as result_count,  -- count given in API response (sum of all page result counts)
+    sum(result_count) as result_count,  -- count given in API response
+    -- (sum of all page result counts)
     max(inserted_at) as inserted_at,
     twarc_version,
     min(retrieved_at) as retrieved_at_min, -- earliest retrieval time for pages in file
@@ -541,41 +542,6 @@ select
 from results_page
 group by file_name
 """
-
-# def map_file_metadata(filename: str, page_metadata: List[Dict]) -> Dict[str, List[Dict]]:
-#     metadata = {"file_name": filename}
-#
-#     # Tidy tweet metadata
-#     metadata["tidy_tweet_version"] = version
-#
-#     # Condense oldest_id, newest_id, result_count, and retrieved_at max/min
-#     metadata["oldest_id"] = min([page["oldest_id"] for page in page_metadata])
-#     metadata["newest_id"] = max([page["newest_id"] for page in page_metadata])
-#     metadata["result_count"] = sum([page["result_count"] for page in page_metadata])
-#     metadata["retrieved_at_min"] = min([page["retrieved_at"] for page in page_metadata])
-#     metadata["retrieved_at_max"] = max([page["retrieved_at"] for page in page_metadata])
-#
-#     # Values that are the same for each page
-#     metadata["twarc_version"] = page_metadata[0]["twarc_version"]
-#
-#     # Extra info
-#     extras = []
-#     for page in page_metadata:
-#         extras.append(page.pop("additional_metadata"))
-#
-#     metadata["additional_metadata"] = dumps(extras)
-#     metadata["result_info_per_page"] = dumps([
-#         {
-#             "oldest_id": page["oldest_id"],
-#             "newest_id": page["newest_id"],
-#             "result_count": page["result_count"],
-#             "retrieved_at": page["retrieved_at"],
-#             "request_url": page["request_url"]
-#         }
-#         for page in page_metadata
-#     ])
-#
-#     return metadata
 
 
 def map_page_metadata(

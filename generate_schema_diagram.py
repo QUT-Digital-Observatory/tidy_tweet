@@ -70,12 +70,15 @@ def parse_table(statement: str) -> Tuple[str, List[Column], str]:
             for i, col in enumerate(columns):
                 if col.name in key_columns:
                     del columns[i]
-                    columns.insert(i, Column(
-                        name=col.name,
-                        type=col.type,
-                        constraints="primary key " + col.constraints,
-                        comment=col.comment
-                    ))
+                    columns.insert(
+                        i,
+                        Column(
+                            name=col.name,
+                            type=col.type,
+                            constraints="primary key " + col.constraints,
+                            comment=col.comment,
+                        ),
+                    )
         elif " " in column_def:
             # This line has at least two words and hence a column definition
             column_def = column_def.split()
@@ -97,7 +100,9 @@ def parse_table(statement: str) -> Tuple[str, List[Column], str]:
     return table_name, columns, table_comment
 
 
-def write_table_as_list(output: TextIO, table_name: str, columns: List[Column], table_comment: str):
+def write_table_as_list(
+    output: TextIO, table_name: str, columns: List[Column], table_comment: str
+):
     """
     Prints a markdown-formatted list of the table columns
     """
