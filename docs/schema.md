@@ -51,7 +51,7 @@ erDiagram
         string alt_text
         text media_key PK
     }
-    "user" {
+    "user_by_page" {
         text name
         text profile_image_url
         text id PK
@@ -66,7 +66,7 @@ erDiagram
         integer page_id PK, FK
         text source_file FK
     }
-    "tweet" {
+    "tweet_by_page" {
         text id PK
         integer page_id PK, FK
         text reply_settings
@@ -107,15 +107,15 @@ erDiagram
     user_hashtag |o--o{ user : "user"
     tweet_mention |o--o{ tweet : "tweet"
     user_mention |o--o{ user : "user"
-    user |o--o{ results_page : "page"
-    user |o--o{ results_page : "source file"
-    tweet |o--o{ results_page : "page"
-    tweet |o--o{ tweet : "retweeted tweet"
-    tweet |o--o{ tweet : "quoted tweet"
-    tweet |o--o{ tweet : "replied to tweet"
-    tweet |o--o{ user : "in reply to user"
-    tweet |o--o{ user : "author"
-    tweet |o--o{ results_page : "source file"
+    user_by_page |o--o{ results_page : "page"
+    user_by_page |o--o{ results_page : "source file"
+    tweet_by_page |o--o{ results_page : "page"
+    tweet_by_page |o--o{ tweet : "retweeted tweet"
+    tweet_by_page |o--o{ tweet : "quoted tweet"
+    tweet_by_page |o--o{ tweet : "replied to tweet"
+    tweet_by_page |o--o{ user : "in reply to user"
+    tweet_by_page |o--o{ user : "author"
+    tweet_by_page |o--o{ results_page : "source file"
 ```
 
 Table **tweet_url**:
@@ -191,7 +191,7 @@ Table **media**:
 - **media_key** (text primary key)
 
 
-Table **user**:
+Table **user_by_page**:
 
 - **name** (text)
 - **profile_image_url** (text)
@@ -210,7 +210,7 @@ Table **user**:
 primary key 
 
 
-Table **tweet**:
+Table **tweet_by_page**:
 
 - **id** (text primary key )
 - **page_id** (integer primary key references results_page (id))

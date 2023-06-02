@@ -305,9 +305,9 @@ def map_media(media_list_json) -> Dict[str, List[Dict]]:
 # users
 # TODO: Fields not included yet:
 # - public_metrics
-sql_by_table["user"] = {
+sql_by_table["user_by_page"] = {
     "create": """
-create table user (
+create table user_by_page (
     name text,
     profile_image_url text,
     id text,
@@ -325,23 +325,41 @@ create table user (
 )
     """,
     "insert": """
-insert or ignore into user (
+insert or ignore into user_by_page (
     id, username, name, url,
     profile_image_url, description,
     created_at,
     protected, verified,
     location,
-    pinned_tweet_id
+    pinned_tweet_id,
+    page_id, source_file
 ) values (
     :id, :username, :name, :url,
     :profile_image_url, :description,
     :created_at,
     :protected, :verified,
     :location,
-    :pinned_tweet_id
+    :pinned_tweet_id,
+    :page_id, :source_file
 )
     """,
 }
+sql_views[
+    "user"
+] = """
+create view user as
+select
+    id, username, name, url,
+    profile_image_url, description,
+    created_at,
+    protected, verified,
+    location,
+    pinned_tweet_id,
+    max(retrieved_at) as retrieved_at
+from user_by_page
+left join results_page on user_by_page.page_id = results_page.id
+group by user_by_page.id
+"""
 
 
 def map_user(user_json, source_file, page_id) -> Dict[str, List[Dict]]:
@@ -361,7 +379,7 @@ def map_user(user_json, source_file, page_id) -> Dict[str, List[Dict]]:
         "page_id": page_id,
     }
 
-    mappings = {"user": [user_map]}
+    mappings = {"user_by_page": [user_map]}
 
     # Entities
     if "entities" in user_json:
@@ -378,9 +396,9 @@ def map_user(user_json, source_file, page_id) -> Dict[str, List[Dict]]:
 # - entities
 # - context_annotations
 
-sql_by_table["tweet"] = {
+sql_by_table["tweet_by_page"] = {
     "create": """
-create table tweet (
+create table tweet_by_page (
     id text,
     page_id integer references results_page (id),
     reply_settings text,
@@ -405,7 +423,7 @@ create table tweet (
 )
     """,
     "insert": """
-insert or ignore into tweet (
+insert or ignore into tweet_by_page (
     id, author_id,
     text, lang, source,
     possibly_sensitive, reply_settings,
@@ -432,6 +450,26 @@ insert or ignore into tweet (
 )
     """,
 }
+sql_views[
+    "tweet"
+] = """
+create view tweet as
+select
+    tweet_by_page.id, author_id,
+    text, lang, source,
+    possibly_sensitive, reply_settings,
+    created_at,
+    conversation_id,
+    retweeted_tweet_id,
+    quoted_tweet_id,
+    replied_to_tweet_id,
+    in_reply_to_user_id,
+    like_count, quote_count, reply_count, retweet_count,
+    max(retrieved_at) as retrieved_at
+from tweet_by_page
+left join results_page on tweet_by_page.page_id = results_page.id
+group by tweet_by_page.id
+"""
 
 
 def map_tweet(
@@ -479,7 +517,7 @@ def map_tweet(
     tweet_map["quoted_tweet_id"] = qt_id
     tweet_map["replied_to_tweet_id"] = replied_to_id
 
-    mappings = {"tweet": [tweet_map]}
+    mappings = {"tweet_by_page": [tweet_map]}
 
     # Entities
     if "entities" in tweet_json:
@@ -557,7 +595,7 @@ def map_page_metadata(
     for key in key_columns:
         metadata[key] = page_metadata_json.pop(key, None)
 
-    # Twarc metadata
+    # Twarc metadatas
     metadata["twarc_version"] = twarc_metadata_json.pop("version", None)
     metadata["request_url"] = twarc_metadata_json.pop("url", None)
     metadata["retrieved_at"] = twarc_metadata_json.pop("retrieved_at")

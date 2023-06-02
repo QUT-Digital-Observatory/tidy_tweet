@@ -27,7 +27,7 @@ def test_load_timeline(tmp_path):
         db.execute(
             """
             select directly_collected, count(*)
-            from tweet
+            from tweet_by_page
             group by directly_collected;
          """
         )

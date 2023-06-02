@@ -100,6 +100,10 @@ def initialise_sqlite(
                 {"version": mapping.SCHEMA_VERSION},
             )
 
+        # Create views
+        for view_sql in mapping.sql_views.values():
+            cursor.execute(view_sql)
+
         logger.info("The database schema has been initialised")
 
 
