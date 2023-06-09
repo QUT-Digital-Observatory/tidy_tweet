@@ -349,7 +349,7 @@ sql_views[
 ] = """
 create view user as
 select
-    id, username, name, url,
+    user_by_page.id, username, name, url,
     profile_image_url, description,
     created_at,
     protected, verified,
