@@ -19,7 +19,7 @@ except ImportError:
 
 # --- SCHEMA VERSION ---
 # Update this every time the database schema is changed!
-SCHEMA_VERSION = "2022-05-22"
+SCHEMA_VERSION = "2023-06-22"
 
 
 sql_by_table: Dict[str, Dict[str, str]] = {}
@@ -258,7 +258,7 @@ create table media (
     type text,
     duration_ms integer,
     view_count integer,
-    alt_text string,
+    alt_text text,
     media_key text primary key
 )
     """,
@@ -320,7 +320,7 @@ create table user_by_page (
     url text,
     username text,
     page_id integer references results_page (id),
-    source_file text references results_page (filename),
+    source_file text references results_page (file_name),
     primary key (id, page_id)
 )
     """,
@@ -417,7 +417,7 @@ create table tweet_by_page (
     quote_count integer,
     reply_count integer,
     retweet_count integer,
-    source_file text references results_page (filename),
+    source_file text references results_page (file_name),
     directly_collected integer, -- boolean
     primary key (id, page_id)
 )
@@ -538,7 +538,7 @@ create table results_page (
     file_name text,
     oldest_id text,  -- oldest tweet id in page
     newest_id text,  -- newest tweet id in page
-    result_count text,  -- count given in API response
+    result_count integer,  -- count given in API response
     inserted_at text default current_timestamp,
     twarc_version text,
     tidy_tweet_version text,
@@ -609,7 +609,7 @@ def map_page_metadata(
     if len(twarc_metadata_json) > 0:
         extras["twarc"] = twarc_metadata_json
 
-    metadata["additional_metadata"] = dumps(extras)
+    metadata["additional_metadata"] = dumps(extras, ensure_ascii=False)
 
     return metadata
 
@@ -624,5 +624,5 @@ for table_sql in sql_by_table.values():
 # --- Convenience lists ---
 
 create_table_statements = [
-    clean_sql_statement(tbl["create"]) for tbl in sql_by_table.values()
+    clean_sql_statement(tbl["create"] + " strict") for tbl in sql_by_table.values()
 ]

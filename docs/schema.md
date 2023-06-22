@@ -48,7 +48,7 @@ erDiagram
         text type
         integer duration_ms
         integer view_count
-        string alt_text
+        text alt_text
         text media_key PK
     }
     "user_by_page" {
@@ -93,7 +93,7 @@ erDiagram
         text file_name
         text oldest_id
         text newest_id
-        text result_count
+        integer result_count
         text inserted_at
         text twarc_version
         text tidy_tweet_version
@@ -187,7 +187,7 @@ Table **media**:
 - **type** (text)
 - **duration_ms** (integer)
 - **view_count** (integer)
-- **alt_text** (string)
+- **alt_text** (text)
 - **media_key** (text primary key)
 
 
@@ -205,7 +205,7 @@ Table **user_by_page**:
 - **url** (text)
 - **username** (text)
 - **page_id** (integer primary key references results_page (id))
-- **source_file** (text references results_page (filename))
+- **source_file** (text references results_page (file_name))
 
 primary key 
 
@@ -230,7 +230,7 @@ Table **tweet_by_page**:
 - **quote_count** (integer)
 - **reply_count** (integer)
 - **retweet_count** (integer)
-- **source_file** (text references results_page (filename))
+- **source_file** (text references results_page (file_name))
 - **directly_collected** (integer): boolean
 
 primary key 
@@ -242,7 +242,7 @@ Table **results_page**:
 - **file_name** (text)
 - **oldest_id** (text): oldest tweet id in page
 - **newest_id** (text): newest tweet id in page
-- **result_count** (text): count given in API response
+- **result_count** (integer): count given in API response
 - **inserted_at** (text default current_timestamp)
 - **twarc_version** (text)
 - **tidy_tweet_version** (text)
