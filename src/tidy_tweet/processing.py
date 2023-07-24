@@ -101,7 +101,26 @@ def load_twarc_json_to_sqlite(
             page_num = page_num + 1
             logger.info(f"Processing page {page_num} of {filename}")
             page_json = json.loads(page)
-            _load_page_object(str(filename), page_json, connection)
+            try:
+                _load_page_object(str(filename), page_json, connection)
+            except Exception as e:
+                raise PageParsingError(filename, page_num) from e
 
         logger.info(f"All {page_num} pages of {filename} processed")
     return page_num
+
+
+class PageParsingError(Exception):
+    file_name: str
+    page_number: int
+
+    def __init__(self, file_name: str, page_number: int, *args):
+        self.file_name = file_name
+        self.page_number = page_number
+
+        super().__init__(*args)
+
+    def __str__(self):
+        return "tidy_tweet encountered an error while parsing page " \
+               f"{self.page_number} of file {self.file_name}"
+
