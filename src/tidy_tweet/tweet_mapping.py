@@ -623,6 +623,9 @@ for table_sql in sql_by_table.values():
 
 # --- Convenience lists ---
 
-create_table_statements = [
-    clean_sql_statement(tbl["create"] + " strict") for tbl in sql_by_table.values()
-]
+
+def get_create_table_statements(strict_mode=True):
+    strict = " strict" if strict_mode else ""
+    return [
+        clean_sql_statement(tbl["create"] + strict) for tbl in sql_by_table.values()
+    ]

@@ -55,7 +55,9 @@ class LibraryVersionMismatchWarning(Warning):
 
 
 def initialise_sqlite(
-    db_name: Union[str, PathLike], allow_existing_database: bool = False
+    db_name: Union[str, PathLike],
+    allow_existing_database: bool = False,
+    strict_mode: bool = True,
 ):
     """
     Creates and initialises an empty sqlite database for loading tweet data into.
@@ -70,15 +72,20 @@ def initialise_sqlite(
     pre-existing. This function expects the tidy_tweet tables to not already exist in
     the database. This behaviour, while possible, is not currently supported by
     tidy_tweet.
+    :param strict_mode: By default, tables are created in SQLite strict mode to help
+    catch parsing errors. For compatibility with some tools, you may need to disable
+    this.
     """
     db_name = Path(db_name)
 
     if not allow_existing_database:
         assert not db_name.exists()
 
+    create_table_statements = mapping.get_create_table_statements(strict_mode)
+
     with sqlite3.connect(db_name) as db:
         cursor = db.cursor()
-        for tbl_stmt in mapping.create_table_statements:
+        for tbl_stmt in create_table_statements:
             cursor.execute(tbl_stmt)
 
         # Initialise the schema related metadata first, otherwise if an
@@ -93,7 +100,7 @@ def initialise_sqlite(
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
             created_tables = cursor.fetchall()
             logger.debug("Created database tables: " + str(created_tables))
-            assert len(created_tables) == len(mapping.create_table_statements)
+            assert len(created_tables) == len(create_table_statements)
             cursor.execute("create table schema_version (schema_version text)")
             cursor.execute(
                 "insert into schema_version values (:version)",

@@ -6,4 +6,6 @@ from tidy_tweet.database import (
     SchemaVersionMismatchError,
     LibraryVersionMismatchWarning,
 )
-from tidy_tweet.tweet_mapping import create_table_statements as database_schema
+from tidy_tweet.tweet_mapping import get_create_table_statements as get_database_schema
+
+database_schema = get_database_schema(strict_mode=False)

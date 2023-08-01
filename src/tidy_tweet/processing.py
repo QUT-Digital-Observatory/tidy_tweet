@@ -121,6 +121,7 @@ class PageParsingError(Exception):
         super().__init__(*args)
 
     def __str__(self):
-        return "tidy_tweet encountered an error while parsing page " \
-               f"{self.page_number} of file {self.file_name}"
-
+        return (
+            "tidy_tweet encountered an error while parsing page "
+            f"{self.page_number} of file {self.file_name}"
+        )
