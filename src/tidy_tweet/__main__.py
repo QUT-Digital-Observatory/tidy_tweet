@@ -18,7 +18,15 @@ logger = getLogger(__name__)
 @click.command()
 @click.argument("database", type=click.Path(path_type=Path), required=True)
 @click.argument("json_files", type=click.Path(exists=True), nargs=-1)
-def tidy_twarc_jsons(database: Path, json_files: Collection[Union[str, PathLike]]):
+@click.option(
+    "--strict/--no_strict",
+    default=True,
+    help="Should the SQLite tables be created in strict mode (defaults to yes)? "
+    "Irrelevant if adding files to an existing database.",
+)
+def tidy_twarc_jsons(
+    database: Path, json_files: Collection[Union[str, PathLike]], strict
+):
     """
     Tidies Twitter json collected with Twarc into relational tables.
 
@@ -55,7 +63,7 @@ def tidy_twarc_jsons(database: Path, json_files: Collection[Union[str, PathLike]
     else:
         # If database doesn't exist, initialise it
         click.echo("Creating new tidy tweet database: " + str(database))
-        db.initialise_sqlite(database)
+        db.initialise_sqlite(database, strict_mode=strict)
 
     # Load files into database
     num_files = len(json_files)
