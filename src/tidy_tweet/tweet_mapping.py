@@ -319,9 +319,9 @@ create table user_by_page (
     verified integer, -- boolean
     url text,
     username text,
-    page_id integer references results_page (id),
+    source_page integer references results_page (page),
     source_file text references results_page (file_name),
-    primary key (id, page_id)
+    primary key (id, source_file, source_page)
 )
     """,
     "insert": """
@@ -332,7 +332,7 @@ insert or ignore into user_by_page (
     protected, verified,
     location,
     pinned_tweet_id,
-    page_id, source_file
+    source_page, source_file
 ) values (
     :id, :username, :name, :url,
     :profile_image_url, :description,
@@ -340,7 +340,7 @@ insert or ignore into user_by_page (
     :protected, :verified,
     :location,
     :pinned_tweet_id,
-    :page_id, :source_file
+    :page_num, :source_file
 )
     """,
 }
@@ -357,12 +357,14 @@ select
     pinned_tweet_id,
     max(retrieved_at) as retrieved_at
 from user_by_page
-left join results_page on user_by_page.page_id = results_page.id
+left join results_page on
+    user_by_page.source_page = results_page.page
+    and user_by_page.source_file = results_page.file_name
 group by user_by_page.id
 """
 
 
-def map_user(user_json, source_file, page_id) -> Dict[str, List[Dict]]:
+def map_user(user_json, source_file, page_num) -> Dict[str, List[Dict]]:
     user_map = {
         "id": user_json["id"],
         "username": user_json["username"],
@@ -376,7 +378,7 @@ def map_user(user_json, source_file, page_id) -> Dict[str, List[Dict]]:
         "location": user_json.get("location", None),
         "pinned_tweet_id": user_json.get("pinned_tweet_id", None),
         "source_file": source_file,
-        "page_id": page_id,
+        "page_num": page_num,
     }
 
     mappings = {"user_by_page": [user_map]}
@@ -400,7 +402,7 @@ sql_by_table["tweet_by_page"] = {
     "create": """
 create table tweet_by_page (
     id text,
-    page_id integer references results_page (id),
+    source_page integer references results_page (page),
     reply_settings text,
     conversation_id text,
     created_at text,
@@ -419,7 +421,7 @@ create table tweet_by_page (
     retweet_count integer,
     source_file text references results_page (file_name),
     directly_collected integer, -- boolean
-    primary key (id, page_id)
+    primary key (id, source_file, source_page)
 )
     """,
     "insert": """
@@ -434,7 +436,7 @@ insert or ignore into tweet_by_page (
     replied_to_tweet_id,
     in_reply_to_user_id,
     like_count, quote_count, reply_count, retweet_count,
-    directly_collected, source_file, page_id
+    directly_collected, source_file, source_page
 ) values (
     :id, :author_id,
     :text, :lang, :source,
@@ -446,7 +448,7 @@ insert or ignore into tweet_by_page (
     :replied_to_tweet_id,
     :in_reply_to_user_id,
     :like_count, :quote_count, :reply_count, :retweet_count,
-    :directly_collected, :source_file, :page_id
+    :directly_collected, :source_file, :source_page
 )
     """,
 }
@@ -467,13 +469,15 @@ select
     like_count, quote_count, reply_count, retweet_count,
     max(retrieved_at) as retrieved_at
 from tweet_by_page
-left join results_page on tweet_by_page.page_id = results_page.id
+left join results_page on
+    tweet_by_page.source_page = results_page.page
+    and tweet_by_page.source_file = results_page.file_name
 group by tweet_by_page.id
 """
 
 
 def map_tweet(
-    tweet_json, directly_collected: bool, source_file: str, page_id
+    tweet_json, directly_collected: bool, source_file: str, page_num
 ) -> Dict[str, List[Dict]]:
     tweet_map = {
         "id": tweet_json["id"],
@@ -492,7 +496,7 @@ def map_tweet(
         "retweet_count": tweet_json["public_metrics"]["retweet_count"],
         "directly_collected": directly_collected,
         "source_file": source_file,
-        "page_id": page_id,
+        "source_page": page_num,
     }
 
     if "in_reply_to_user_id" in tweet_json:
@@ -534,7 +538,7 @@ def map_tweet(
 sql_by_table["results_page"] = {
     "create": """
 create table results_page (
-    id integer primary key,
+    page integer,  -- page number within the file
     file_name text,
     oldest_id text,  -- oldest tweet id in page
     newest_id text,  -- newest tweet id in page
@@ -544,18 +548,19 @@ create table results_page (
     tidy_tweet_version text,
     retrieved_at text, -- time response from twitter was recorded
     request_url text,
-    additional_metadata text -- extra metadata from twarc and twitter
+    additional_metadata text, -- extra metadata from twarc and twitter
+    primary key (file_name, page)
 )
     """,
     "insert": """
 insert into results_page (
-    file_name,
+    page, file_name,
     oldest_id, newest_id, result_count,
     retrieved_at, request_url,
     twarc_version, tidy_tweet_version,
     additional_metadata
 ) values (
-    :file_name,
+    :page, :file_name,
     :oldest_id, :newest_id, :result_count,
     :retrieved_at, :request_url,
     :twarc_version, :tidy_tweet_version,
@@ -583,9 +588,9 @@ group by file_name
 
 
 def map_page_metadata(
-    filename: str, page_metadata_json: Dict, twarc_metadata_json: Dict
+    filename: str, page_num: int, page_metadata_json: Dict, twarc_metadata_json: Dict
 ) -> Dict:
-    metadata = {"file_name": filename}
+    metadata = {"file_name": filename, "page": page_num}
 
     # Tidy tweet metadata
     metadata["tidy_tweet_version"] = version

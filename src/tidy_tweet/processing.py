@@ -10,7 +10,7 @@ logger = getLogger(__name__)
 
 
 def _load_page_object(
-    file_name: str, page_json: Mapping, connection: sqlite3.Connection
+    file_name: str, page_num: int, page_json: Mapping, connection: sqlite3.Connection
 ):
     """
     Takes a page of twarc Twitter API results and loads it into the database.
@@ -33,9 +33,11 @@ def _load_page_object(
     # Write this first so we can get the page id
     db.execute(
         mapping.sql_by_table["results_page"]["insert"],
-        mapping.map_page_metadata(file_name, twitter_metadata, twarc_metadata),
+        mapping.map_page_metadata(
+            file_name, page_num, twitter_metadata, twarc_metadata
+        ),
     )
-    page_info = (file_name, db.lastrowid)
+    page_info = (file_name, page_num)
 
     # Includes
     logger.debug("Processing includes section of page")
@@ -102,7 +104,7 @@ def load_twarc_json_to_sqlite(
             logger.info(f"Processing page {page_num} of {filename}")
             page_json = json.loads(page)
             try:
-                _load_page_object(str(filename), page_json, connection)
+                _load_page_object(str(filename), page_num, page_json, connection)
             except Exception as e:
                 raise PageParsingError(filename, page_num) from e
 
