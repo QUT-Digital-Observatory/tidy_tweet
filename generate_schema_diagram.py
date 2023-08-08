@@ -1,6 +1,6 @@
 import click
 
-from tidy_tweet.tweet_mapping import create_table_statements
+from tidy_tweet import database_schema
 from typing import NamedTuple, List, Tuple, TextIO
 
 
@@ -121,7 +121,7 @@ def write_table_as_list(
 
 
 def write_schema_as_lists(output: TextIO):
-    for statement in create_table_statements:
+    for statement in database_schema:
         parsed_name, parsed_columns, table_comment = parse_table(statement)
 
         write_table_as_list(output, parsed_name, parsed_columns, table_comment)
@@ -141,7 +141,7 @@ def write_schema_as_mermaid_er(output: TextIO, with_comments=True):
     foreign_keys: List[ForeignKey] = []
 
     # Table definitions
-    for statement in create_table_statements:
+    for statement in database_schema:
         table_name, columns, _ = parse_table(statement)
 
         output.write(indent + f'"{table_name}"' + " {\n")

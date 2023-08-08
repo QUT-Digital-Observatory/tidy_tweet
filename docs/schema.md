@@ -63,12 +63,12 @@ erDiagram
         integer verified
         text url
         text username
-        integer page_id PK, FK
-        text source_file FK
+        integer source_page PK, FK
+        text source_file PK, FK
     }
     "tweet_by_page" {
         text id PK
-        integer page_id PK, FK
+        integer source_page PK, FK
         text reply_settings
         text conversation_id
         text created_at
@@ -85,12 +85,12 @@ erDiagram
         integer quote_count
         integer reply_count
         integer retweet_count
-        text source_file FK
+        text source_file PK, FK
         integer directly_collected
     }
     "results_page" {
-        integer id PK
-        text file_name
+        integer page PK
+        text file_name PK
         text oldest_id
         text newest_id
         integer result_count
@@ -107,9 +107,9 @@ erDiagram
     user_hashtag |o--o{ user : "user"
     tweet_mention |o--o{ tweet : "tweet"
     user_mention |o--o{ user : "user"
-    user_by_page |o--o{ results_page : "page"
+    user_by_page |o--o{ results_page : "source page"
     user_by_page |o--o{ results_page : "source file"
-    tweet_by_page |o--o{ results_page : "page"
+    tweet_by_page |o--o{ results_page : "source page"
     tweet_by_page |o--o{ tweet : "retweeted tweet"
     tweet_by_page |o--o{ tweet : "quoted tweet"
     tweet_by_page |o--o{ tweet : "replied to tweet"
@@ -204,8 +204,8 @@ Table **user_by_page**:
 - **verified** (integer): boolean
 - **url** (text)
 - **username** (text)
-- **page_id** (integer primary key references results_page (id))
-- **source_file** (text references results_page (file_name))
+- **source_page** (integer primary key references results_page (page))
+- **source_file** (text primary key references results_page (file_name))
 
 primary key 
 
@@ -213,7 +213,7 @@ primary key
 Table **tweet_by_page**:
 
 - **id** (text primary key )
-- **page_id** (integer primary key references results_page (id))
+- **source_page** (integer primary key references results_page (page))
 - **reply_settings** (text)
 - **conversation_id** (text)
 - **created_at** (text)
@@ -230,7 +230,7 @@ Table **tweet_by_page**:
 - **quote_count** (integer)
 - **reply_count** (integer)
 - **retweet_count** (integer)
-- **source_file** (text references results_page (file_name))
+- **source_file** (text primary key references results_page (file_name))
 - **directly_collected** (integer): boolean
 
 primary key 
@@ -238,8 +238,8 @@ primary key
 
 Table **results_page**:
 
-- **id** (integer primary key)
-- **file_name** (text)
+- **page** (integer primary key ): page number within the file
+- **file_name** (text primary key )
 - **oldest_id** (text): oldest tweet id in page
 - **newest_id** (text): newest tweet id in page
 - **result_count** (integer): count given in API response
@@ -249,5 +249,7 @@ Table **results_page**:
 - **retrieved_at** (text): time response from twitter was recorded
 - **request_url** (text)
 - **additional_metadata** (text): extra metadata from twarc and twitter
+
+primary key 
 
 
