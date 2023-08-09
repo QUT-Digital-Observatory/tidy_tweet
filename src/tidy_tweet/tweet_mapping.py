@@ -369,7 +369,7 @@ def map_user(user_json, source_file, page_num) -> Dict[str, List[Dict]]:
         "id": user_json["id"],
         "username": user_json["username"],
         "name": user_json["name"],
-        "url": user_json["url"],
+        "url": user_json.get("url", None),
         "profile_image_url": user_json["profile_image_url"],
         "description": user_json.get("description", None),
         "created_at": user_json["created_at"],
