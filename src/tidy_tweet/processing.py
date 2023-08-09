@@ -81,7 +81,9 @@ def _load_page_object(
 
 
 def load_twarc_json_to_sqlite(
-    filename: Union[str, PathLike], db_name: Union[str, PathLike]
+    filename: Union[str, PathLike],
+    db_name: Union[str, PathLike],
+    json_encoding: str = None,
 ) -> int:
     """
     Parses a json/jsonl file produced by a Twarc search and loads the Twitter data into
@@ -95,7 +97,9 @@ def load_twarc_json_to_sqlite(
     :param db_name: The path to an existing sqlite database to load the data into
     :return: The number of pages of Twitter results loaded in this file
     """
-    with open(filename, "r") as json_fh, sqlite3.connect(db_name) as connection:
+    with open(filename, "r", encoding=json_encoding) as json_fh, sqlite3.connect(
+        db_name
+    ) as connection:
         logger.info(f"Loading {filename} into {db_name}")
 
         page_num = 0

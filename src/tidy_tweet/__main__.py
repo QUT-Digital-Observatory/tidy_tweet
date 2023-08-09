@@ -24,8 +24,16 @@ logger = getLogger(__name__)
     help="Should the SQLite tables be created in strict mode (defaults to yes)? "
     "Irrelevant if adding files to an existing database.",
 )
+@click.option(
+    "--json_encoding",
+    type=str,
+    default=None,
+    help="If the json file/s you wish to load are encoded other than UTF-8, specify "
+    "encoding. If you don't know what this means and you're not getting any "
+    "decoding errors using tidy_tweet, you're all good!",
+)
 def tidy_twarc_jsons(
-    database: Path, json_files: Collection[Union[str, PathLike]], strict
+    database: Path, json_files: Collection[Union[str, PathLike]], strict, json_encoding
 ):
     """
     Tidies Twitter json collected with Twarc into relational tables.
@@ -72,7 +80,7 @@ def tidy_twarc_jsons(
     for file in json_files:
         n = n + 1  # Count files for user messaging only
         click.echo(f"Loading {file} (file {n} of {num_files}) into {database}")
-        p = load_twarc_json_to_sqlite(file, database)
+        p = load_twarc_json_to_sqlite(file, database, json_encoding=json_encoding)
         total_pages = total_pages + p
         click.echo(f"{p} pages of Twitter results loaded from {file}")
 
